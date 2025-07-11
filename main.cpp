@@ -8,7 +8,7 @@
 #include <regex>
 
 #include "lexer.h"
-
+#include "parser.h"
 
 using namespace std;
 
@@ -33,9 +33,10 @@ int main(int argc, char** argv) {
     file.close();
 
     // lexer
-    std::vector<Token> tokens = tokenize(&source);
+    std::vector<Lexer::Token> tokens = Lexer::tokenize(&source);
 
     // parser
+    
 
     // transpile
 

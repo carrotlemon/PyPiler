@@ -1,107 +1,162 @@
-#include "lexer.h"
 #include <regex>
+#include <iostream>
+#include "lexer.h"
 
-using namespace std;
-
-std::tuple<Token, int> findMatch(std::string* line, int index) {
-    smatch match;
-    string sub = line->substr(index);
-    Token token = UNKNOWN;
+std::tuple<Lexer::Token, int, int> Lexer::findMatch(std::string* source, int index, int line) {
+    std::smatch match;
+    std::string sub = source->substr(index);
+    Lexer::Token token = {
+        .type = Lexer::TokenType::Invalid,
+        .lexeme = "NONE",
+        .literal = std::monostate(),
+        .line = line,
+    };
     int endIndex = -1;
-    if (regex_search(sub, match, re_newline) && match.position() == 0) { endIndex = index + 1; token = NEWLINE; } 
-    else if (regex_search(sub, match, re_tab) && match.position() == 0) { endIndex = index + match.str().length(); token = TAB; }
-    else if (regex_search(sub, match, re_if) && match.position() == 0) { endIndex = index + 2; token = IF; }
-    else if (regex_search(sub, match, re_elif) && match.position() == 0) { endIndex = index + 4; token = ELIF; }
-    else if (regex_search(sub, match, re_else) && match.position() == 0) { endIndex = index + 4; token = ELSE; }
-    else if (regex_search(sub, match, re_def) && match.position() == 0) { endIndex = index + 3; token = DEF; }
-    else if (regex_search(sub, match, re_print) && match.position() == 0) { endIndex = index + 5; token = PRINT; }
-    else if (regex_search(sub, match, re_lpar) && match.position() == 0) { endIndex = index + 1; token = LPAR; }
-    else if (regex_search(sub, match, re_rpar) && match.position() == 0) { endIndex = index + 1; token = RPAR; }
-    else if (regex_search(sub, match, re_colon) && match.position() == 0) { endIndex = index + 1; token = COLON; }
-    else if (regex_search(sub, match, re_add) && match.position() == 0) { endIndex = index + 1; token = ADD; }
-    else if (regex_search(sub, match, re_sub) && match.position() == 0) { endIndex = index + 1; token = SUB; }
-    else if (regex_search(sub, match, re_mul) && match.position() == 0) { endIndex = index + 1; token = MUL; }
-    else if (regex_search(sub, match, re_ddiv) && match.position() == 0) { endIndex = index + 2; token = DDIV; }
-    else if (regex_search(sub, match, re_div) && match.position() == 0) { endIndex = index + 1; token = DIV; }
-    else if (regex_search(sub, match, re_equal) && match.position() == 0) { endIndex = index + 2; token = EQUAL; }
-    else if (regex_search(sub, match, re_assign) && match.position() == 0) { endIndex = index + 1; token = ASSIGN; }
-    else if (regex_search(sub, match, re_greater_equal) && match.position() == 0) { endIndex = index + 2; token = GREATER_EQUAL; }
-    else if (regex_search(sub, match, re_greater) && match.position() == 0) { endIndex = index + 1; token = GREATER; }
-    else if (regex_search(sub, match, re_less_equal) && match.position() == 0) { endIndex = index + 2; token = LESS_EQUAL; }
-    else if (regex_search(sub, match, re_less) && match.position() == 0) { endIndex = index + 1; token = LESS; }
-    else if (regex_search(sub, match, re_or) && match.position() == 0) { endIndex = index + 2; token = OR; }
-    else if (regex_search(sub, match, re_and) && match.position() == 0) { endIndex = index + 3; token = AND; }
-    else if (regex_search(sub, match, re_true) && match.position() == 0) { endIndex = index + 4; token = TRUE; }
-    else if (regex_search(sub, match, re_false) && match.position() == 0) { endIndex = index + 5; token = FALSE; }
-    else if (regex_search(sub, match, re_none) && match.position() == 0) { endIndex = index + 4; token = NONE; }
-    else if (regex_search(sub, match, re_return) && match.position() == 0) { endIndex = index + 6; token = RETURN; }
-    else if (regex_search(sub, match, re_continue) && match.position() == 0) { endIndex = index + 8; token = CONTINUE; }
-    else if (regex_search(sub, match, re_break) && match.position() == 0) { endIndex = index + 5; token = BREAK; }
-    else if (regex_search(sub, match, re_for) && match.position() == 0) { endIndex = index + 3; token = FOR; }
-    else if (regex_search(sub, match, re_while) && match.position() == 0) { endIndex = index + 5; token = WHILE; }
-    else if (regex_search(sub, match, re_id) && match.position() == 0) { endIndex = index + match.str().length(); token = ID; }
-    else if (regex_search(sub, match, re_ws) && match.position() == 0) { endIndex = index + match.str().length(); token = WS; }
-    
-    return {token, endIndex};
+    // Only reassign token.type and token.literal
+    if (regex_search(sub, match, re_comment)) { token.type=Lexer::TokenType::Comment; }
+    else if (regex_search(sub, match, re_tab)) { token.type=Lexer::TokenType::Tab; }
+    else if (regex_search(sub, match, re_newline)) { line += 1; token.type=Lexer::TokenType::Newline; }
+    else if (regex_search(sub, match, re_ws)) { token.type=Lexer::TokenType::Whitespace; }
+    else if (regex_search(sub, match, re_arrow)) { token.type=Lexer::TokenType::Arrow; }
+    else if (regex_search(sub, match, re_bitor)) { token.type=Lexer::TokenType::BitOr; }
+    else if (regex_search(sub, match, re_bitand)) { token.type=Lexer::TokenType::BitAnd; }
+    else if (regex_search(sub, match, re_shright)) { token.type=Lexer::TokenType::ShRight; }
+    else if (regex_search(sub, match, re_shleft)) { token.type=Lexer::TokenType::ShLeft; }
+    else if (regex_search(sub, match, re_negate)) { token.type=Lexer::TokenType::Negate; }
+    else if (regex_search(sub, match, re_xor)) { token.type=Lexer::TokenType::Xor; }
+    else if (regex_search(sub, match, re_dslash)) { token.type=Lexer::TokenType::DSlash; }
+    else if (regex_search(sub, match, re_slash)) { token.type=Lexer::TokenType::Slash; }
+    else if (regex_search(sub, match, re_plus)) { token.type=Lexer::TokenType::Plus; }
+    else if (regex_search(sub, match, re_minus)) { token.type=Lexer::TokenType::Minus; }
+    else if (regex_search(sub, match, re_star)) { token.type=Lexer::TokenType::Star; }
+    else if (regex_search(sub, match, re_colon)) { token.type=Lexer::TokenType::Colon; }
+    else if (regex_search(sub, match, re_comma)) { token.type=Lexer::TokenType::Comma; }
+    else if (regex_search(sub, match, re_period)) { token.type=Lexer::TokenType::Period; }
+    else if (regex_search(sub, match, re_lpar)) { token.type=Lexer::TokenType::LPar; }
+    else if (regex_search(sub, match, re_rpar)) { token.type=Lexer::TokenType::RPar; }
+    else if (regex_search(sub, match, re_lsquare)) { token.type=Lexer::TokenType::LSquare; }
+    else if (regex_search(sub, match, re_rsquare)) { token.type=Lexer::TokenType::RSquare; }
+    else if (regex_search(sub, match, re_lbrace)) { token.type=Lexer::TokenType::LBrace; }
+    else if (regex_search(sub, match, re_rbrace)) { token.type=Lexer::TokenType::RBrace; }
+    else if (regex_search(sub, match, re_greater_equal)) { token.type=Lexer::TokenType::GreaterEqual; }
+    else if (regex_search(sub, match, re_greater)) { token.type=Lexer::TokenType::Greater; }
+    else if (regex_search(sub, match, re_less_equal)) { token.type=Lexer::TokenType::LessEqual; }
+    else if (regex_search(sub, match, re_less)) { token.type=Lexer::TokenType::Less; }
+    else if (regex_search(sub, match, re_not_equal)) { token.type=Lexer::TokenType::NotEqual; }
+    else if (regex_search(sub, match, re_equal)) { token.type=Lexer::TokenType::Equal; }
+    else if (regex_search(sub, match, re_assign)) { token.type=Lexer::TokenType::Assign; }
+    else if (regex_search(sub, match, re_if)) { token.type=Lexer::TokenType::If; }
+    else if (regex_search(sub, match, re_elif)) { token.type=Lexer::TokenType::Elif; }
+    else if (regex_search(sub, match, re_else)) { token.type=Lexer::TokenType::Else; }
+    else if (regex_search(sub, match, re_def)) { token.type=Lexer::TokenType::Def; }
+    else if (regex_search(sub, match, re_or)) { token.type=Lexer::TokenType::Or; }
+    else if (regex_search(sub, match, re_and)) { token.type=Lexer::TokenType::And; }
+    else if (regex_search(sub, match, re_not)) { token.type=Lexer::TokenType::Not; }
+    else if (regex_search(sub, match, re_return)) { token.type=Lexer::TokenType::Return; }
+    else if (regex_search(sub, match, re_continue)) { token.type=Lexer::TokenType::Continue; }
+    else if (regex_search(sub, match, re_break)) { token.type=Lexer::TokenType::Break; }
+    else if (regex_search(sub, match, re_for)) { token.type=Lexer::TokenType::For; }
+    else if (regex_search(sub, match, re_while)) { token.type=Lexer::TokenType::While; }
+    else if (regex_search(sub, match, re_in)) { token.type=Lexer::TokenType::In; }
+    else if (regex_search(sub, match, re_float)) { token.type=Lexer::TokenType::Float; token.literal=std::stod(match.str());}
+    else if (regex_search(sub, match, re_int)) { token.type=Lexer::TokenType::Int; token.literal=std::stoi(match.str());}
+    else if (regex_search(sub, match, re_string)) { token.type=Lexer::TokenType::String; token.literal=match.str();}
+    else if (regex_search(sub, match, re_true)) { token.type=Lexer::TokenType::True; token.literal=true;}
+    else if (regex_search(sub, match, re_false)) { token.type=Lexer::TokenType::False; token.literal=false;}
+    else if (regex_search(sub, match, re_none)) { token.type=Lexer::TokenType::None; token.literal=std::monostate();}
+    else if (regex_search(sub, match, re_id)) { token.type=Lexer::TokenType::Id; token.literal=match.str();}
+    endIndex = index + match.str().length();
+    token.lexeme=match.str();
+    return {token, endIndex, line};
 }
 
-void printTokens(std::vector<Token> tokens) {
+void Lexer::printTokens(std::vector<Token> tokens, bool advanced) {
     int i = 0;
     
     for(auto t : tokens) {
-        if(t == TAB) { std::cout << "TAB"; }
-        else if(t == NEWLINE) { std::cout << "NEWLINE"; }
-        else if(t == IF) { std::cout << "IF"; }
-        else if(t == ELIF) { std::cout << "ELIF"; }
-        else if(t == ELSE) { std::cout << "ELSE"; }
-        else if(t == DEF) { std::cout << "DEF"; }
-        else if(t == PRINT) { std::cout << "PRINT"; }
-        else if(t == LPAR) { std::cout << "LPAR"; }
-        else if(t == RPAR) { std::cout << "RPAR"; }
-        else if(t == COLON) { std::cout << "COLON"; }
-        else if(t == ADD) { std::cout << "ADD"; }
-        else if(t == SUB) { std::cout << "SUB"; }
-        else if(t == MUL) { std::cout << "MUL"; }
-        else if(t == DDIV) { std::cout << "DDIV"; }
-        else if(t == DIV) { std::cout << "DIV"; }
-        else if(t == EQUAL) { std::cout << "EQUAL"; }
-        else if(t == ASSIGN) { std::cout << "ASSIGN"; }
-        else if(t == GREATER_EQUAL) { std::cout << "GREATER_EQUAL"; }
-        else if(t == GREATER) { std::cout << "GREATER"; }
-        else if(t == LESS_EQUAL) { std::cout << "LESS_EQUAL"; }
-        else if(t == LESS) { std::cout << "LESS"; }
-        else if(t == NOT_EQUAL) { std::cout << "NOT_EQUAL"; }
-        else if(t == NOT) { std::cout << "NOT"; }
-        else if(t == OR) { std::cout << "OR"; }
-        else if(t == AND) { std::cout << "AND"; }
-        else if(t == TRUE) { std::cout << "TRUE"; }
-        else if(t == FALSE) { std::cout << "FALSE"; }
-        else if(t == NONE) { std::cout << "NONE"; }
-        else if(t == RETURN) { std::cout << "RETURN"; }
-        else if(t == CONTINUE) { std::cout << "CONTINUE"; }
-        else if(t == BREAK) { std::cout << "BREAK"; }
-        else if(t == FOR) { std::cout << "FOR"; }
-        else if(t == WHILE) { std::cout << "WHILE"; }
-        else if(t == ID) { std::cout << "ID"; }
-        else if(t == ID) { std::cout << "WS"; }
-        else { std::cout << "UNKNOWN"; }
+        if(t.type == Lexer::TokenType::Comment) { std::cout << "Comment"; }
+        else if(t.type == Lexer::TokenType::Tab) { std::cout << "Tab"; }
+        else if(t.type == Lexer::TokenType::Newline) { std::cout << "Newline" << std::endl; }
+        else if(t.type == Lexer::TokenType::Whitespace) { std::cout << "Whitespace"; }
+        else if(t.type == Lexer::TokenType::Arrow) { std::cout << "Arrow"; }
+        else if(t.type == Lexer::TokenType::BitOr) { std::cout << "BitOr"; }
+        else if(t.type == Lexer::TokenType::BitAnd) { std::cout << "BitAnd"; }
+        else if(t.type == Lexer::TokenType::ShRight) { std::cout << "ShRight"; }
+        else if(t.type == Lexer::TokenType::ShLeft) { std::cout << "ShLeft"; }
+        else if(t.type == Lexer::TokenType::Negate) { std::cout << "Negate"; }
+        else if(t.type == Lexer::TokenType::Xor) { std::cout << "Xor"; }
+        else if(t.type == Lexer::TokenType::DSlash) { std::cout << "DSlash"; }
+        else if(t.type == Lexer::TokenType::Slash) { std::cout << "Slash"; }
+        else if(t.type == Lexer::TokenType::Plus) { std::cout << "Plus"; }
+        else if(t.type == Lexer::TokenType::Minus) { std::cout << "Minus"; }
+        else if(t.type == Lexer::TokenType::Star) { std::cout << "Star"; }
+        else if(t.type == Lexer::TokenType::Colon) { std::cout << "Colon"; }
+        else if(t.type == Lexer::TokenType::Comma) { std::cout << "Comma"; }
+        else if(t.type == Lexer::TokenType::Period) { std::cout << "Period"; }   
+        else if(t.type == Lexer::TokenType::LPar) { std::cout << "LPar"; }
+        else if(t.type == Lexer::TokenType::RPar) { std::cout << "RPar"; }
+        else if(t.type == Lexer::TokenType::LSquare) { std::cout << "LSquare"; }
+        else if(t.type == Lexer::TokenType::RSquare) { std::cout << "RSquare"; }
+        else if(t.type == Lexer::TokenType::LBrace) { std::cout << "LBrace"; }
+        else if(t.type == Lexer::TokenType::RBrace) { std::cout << "RBrace"; }
+        else if(t.type == Lexer::TokenType::GreaterEqual) { std::cout << "GreaterEqual"; }
+        else if(t.type == Lexer::TokenType::Greater) { std::cout << "Greater"; }
+        else if(t.type == Lexer::TokenType::LessEqual) { std::cout << "LessEqual"; }
+        else if(t.type == Lexer::TokenType::Less) { std::cout << "Less"; }
+        else if(t.type == Lexer::TokenType::NotEqual) { std::cout << "NotEqual"; }
+        else if(t.type == Lexer::TokenType::Equal) { std::cout << "Equal"; }
+        else if(t.type == Lexer::TokenType::Assign) { std::cout << "Assign"; }
 
-        if(i < tokens.size()-1) {
-            std::cout << ", ";
+        else if(t.type == Lexer::TokenType::If) { std::cout << "If"; }
+        else if(t.type == Lexer::TokenType::Elif) { std::cout << "Elif"; }
+        else if(t.type == Lexer::TokenType::Else) { std::cout << "Else"; }
+        else if(t.type == Lexer::TokenType::Def) { std::cout << "Def"; }
+        else if(t.type == Lexer::TokenType::Or) { std::cout << "Or"; }
+        else if(t.type == Lexer::TokenType::And) { std::cout << "And"; }
+        else if(t.type == Lexer::TokenType::Not) { std::cout << "Not"; }
+        else if(t.type == Lexer::TokenType::Return) { std::cout << "Return"; }
+        else if(t.type == Lexer::TokenType::Continue) { std::cout << "Continue"; }
+        else if(t.type == Lexer::TokenType::Break) { std::cout << "Br"; }
+        else if(t.type == Lexer::TokenType::For) { std::cout << "For"; }
+        else if(t.type == Lexer::TokenType::While) { std::cout << "While"; }
+        else if(t.type == Lexer::TokenType::In) { std::cout << "In"; }
+
+        else if(t.type == Lexer::TokenType::Float) { std::cout << "Float"; }
+        else if(t.type == Lexer::TokenType::Int) { std::cout << "Int"; }
+        else if(t.type == Lexer::TokenType::String) { std::cout << "String"; }
+        else if(t.type == Lexer::TokenType::True) { std::cout << "True"; }
+        else if(t.type == Lexer::TokenType::False) { std::cout << "False"; }
+        else if(t.type == Lexer::TokenType::None) { std::cout << "None"; }
+        else if(t.type == Lexer::TokenType::Id) { std::cout << "Id"; }
+        else { std::cout << "INVALID"; }
+        
+        if(i < tokens.size()-1) { std::cout << ", "; }
+        ++i;
+    }
+    i = 0;
+    if (advanced) {
+        std::cout << "\n" << std::endl;
+        for(auto t : tokens) {
+            std::cout << t.lexeme;
+            if(i < tokens.size()-1) { std::cout << ", "; }
+            ++i;
         }
-        i++;
     }
     std::cout << std::endl;
 }
 
-std::vector<Token> tokenize(std::string* source) {
-    vector<Token> tokens;
+std::vector<Lexer::Token> Lexer::tokenize(std::string* source) {
+    std::vector<Token> tokens;
     int index = 0;
-    while(index < source->size()) {
-        auto [token, i] = findMatch(source, index);
-        tokens.push_back(token);
+    int line = 0;
+    while(index != -1 && index < source->size()) {
+        auto [token, i, newline] = findMatch(source, index, line);
+        if (token.type!=Lexer::TokenType::Whitespace) {
+            tokens.push_back(token);
+        }
         index = i;
+        line = newline;
     }
-    printTokens(tokens);
+    printTokens(tokens, true);
     return tokens;
 }

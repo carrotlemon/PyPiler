@@ -1,19 +1,37 @@
 #pragma once
 
+#include <string>
+#include <variant>
+#include <optional>
+#include <vector>
+
 #include "lexer.h"
 
-enum expr{
+namespace Parser {
+    // Forward declarations
+    struct Expr;
+    struct Stmt;
 
-};
+    using ExprPtr = std::shared_ptr<Expr>;
+    using StmtPtr = std::shared_ptr<Stmt>;
 
-enum data_type {
+    // Expression types
+    struct ExprLiteral     { std::variant<int, std::string, bool> value; };
+    struct ExprVariable    { std::string name; };
+    struct ExprBinary      { ExprPtr left; Lexer::Token op; ExprPtr right; };
+    struct ExprGrouping    { ExprPtr expression; };
 
-};
+    struct Expr : std::variant<ExprLiteral, ExprVariable, ExprBinary, ExprGrouping> {
+        using variant::variant;
+    };
 
-enum stmt {
+    // Statement types
+    struct StmtExpression  { ExprPtr expression; };
+    struct StmtVarDecl     { std::string name; ExprPtr initializer; };
 
-};
+    struct Stmt : std::variant<StmtExpression, StmtVarDecl> {
+        using variant::variant;
+    };
 
-enum value {
-
-};
+    std::vector<Stmt> parse(std::vector<Lexer::Token> tokens); 
+}

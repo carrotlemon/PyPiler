@@ -33,7 +33,9 @@ int main(int argc, char** argv) {
     file.close();
 
     // lexer
-    std::vector<Lexer::Token> tokens = Lexer::tokenize(&source);
+    Lexer::Lexer lexer(&source);
+    std::vector<Lexer::Token> *tokens = lexer.tokenize();
+    lexer.printTokens(true);
 
     // parser
     

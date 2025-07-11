@@ -48,13 +48,6 @@ namespace Lexer {
     inline std::regex re_equal(R"(^==)");
     inline std::regex re_assign(R"(^=)");
 
-    // types
-    // inline std::regex re_int_type(R"(^int)");
-    // inline std::regex re_list_type(R"(^List)");
-    // inline std::regex re_strtype(R"(^str)");
-    // inline std::regex re_booltype(R"(^bool)");
-    // inline std::regex re_floattype(R"(^float)");
-
     // keywords
     inline std::regex re_if(R"(^if)");
     inline std::regex re_elif(R"(^elif)");
@@ -93,10 +86,12 @@ namespace Lexer {
         // comparisons
         GreaterEqual, Greater, LessEqual, Less, NotEqual, Equal, Assign,
 
-        // types
-        // IntType, ListType, StrType, BoolType, FloatType,
-
         // keywords
+
+        // TODO:
+        // add class keyword
+        // add import, from, as keywords
+
         If, Elif, Else, Def, Or, Not, And, Return, Continue, Break,
         For, While, In, Pass,
 
@@ -110,14 +105,23 @@ namespace Lexer {
         Invalid
     };
 
+    using Literal = std::variant<std::monostate, std::string, int, double, bool>;
+
     struct Token {
-        TokenType type;
-        std::string lexeme;
-        std::variant<std::monostate, std::string, int, double, bool> literal;
-        int line;
+        TokenType type = TokenType::Invalid;
+        std::string lexeme = "NONE";
+        Literal literal = std::monostate();
+        int line = 0;
     };
     
-    std::tuple<Token, int, int> findMatch(std::string* source, int index, int line);
-    void printTokens(std::vector<Token> tokens, bool advanced);
-    std::vector<Token> tokenize(std::string* source);
+    class Lexer {
+    public:
+        Lexer(std::string *source);
+        std::tuple<Token, size_t, int> findMatch(size_t index, int line);
+        void printTokens(bool advanced = false);
+        std::vector<Token> *tokenize();
+    private:
+        std::string *source;
+        std::vector<Token> tokens;
+    };
 }

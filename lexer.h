@@ -26,6 +26,7 @@ namespace Lexer {
     inline std::regex re_slash(R"(^/)");
     inline std::regex re_plus(R"(^\+)");
     inline std::regex re_minus(R"(^-)");
+    inline std::regex re_dstar(R"(^\*\*)");
     inline std::regex re_star(R"(^\*)");
     inline std::regex re_colon(R"(^:)");
     inline std::regex re_comma(R"(^,)");
@@ -62,6 +63,7 @@ namespace Lexer {
     inline std::regex re_for(R"(^for)");
     inline std::regex re_while(R"(^while)");
     inline std::regex re_in(R"(^in)");
+    inline std::regex re_is(R"(^is)");
 
     // literals
     inline std::regex re_float(R"(^\d+.\d+)");
@@ -77,8 +79,8 @@ namespace Lexer {
         Comment, Tab, Newline, Whitespace,
 
         // operations
-        Arrow, BitOr, BitAnd, ShRight, ShLeft, Xor, Negate,
-        DSlash, Slash, Plus, Minus, Star, Colon, Comma, Period,
+        BitOr, BitAnd, ShRight, ShLeft, Xor, Negate,
+        DSlash, Slash, Plus, Minus, DStar, Star, Colon, Period, Comma, 
         
         // paren
         LPar, RPar, LSquare, RSquare, LBrace, RBrace,
@@ -91,9 +93,10 @@ namespace Lexer {
         // TODO:
         // add class keyword
         // add import, from, as keywords
+        // **, += -= *= /= %= := 
 
         If, Elif, Else, Def, Or, Not, And, Return, Continue, Break,
-        For, While, In, Pass,
+        For, While, In, Is, Pass, Arrow, 
 
         // literals and variables
         // id can be a variable name, function name, or type

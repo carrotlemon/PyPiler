@@ -7,5 +7,15 @@ def twoSum (array):
             return [sumMap[search], i]
         sumMap[array[i]] = i
 
+x = 2 + 2
+#   ^
+y = 2
+
 def foo(bar: int) -> bool:
     return bar == 2
+
+    return (x == 2 or
+            x == 1)
+
+
+x = 1 + 0 and 1

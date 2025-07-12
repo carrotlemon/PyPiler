@@ -26,6 +26,7 @@ namespace Lexer {
         else if (regex_search(sub, match, re_slash)) { token.type=TokenType::Slash; }
         else if (regex_search(sub, match, re_plus)) { token.type=TokenType::Plus; }
         else if (regex_search(sub, match, re_minus)) { token.type=TokenType::Minus; }
+        else if (regex_search(sub, match, re_dstar)) { token.type=TokenType::DStar; }
         else if (regex_search(sub, match, re_star)) { token.type=TokenType::Star; }
         else if (regex_search(sub, match, re_colon)) { token.type=TokenType::Colon; }
         else if (regex_search(sub, match, re_comma)) { token.type=TokenType::Comma; }
@@ -56,6 +57,7 @@ namespace Lexer {
         else if (regex_search(sub, match, re_for)) { token.type=TokenType::For; }
         else if (regex_search(sub, match, re_while)) { token.type=TokenType::While; }
         else if (regex_search(sub, match, re_in)) { token.type=TokenType::In; }
+        else if (regex_search(sub, match, re_is)) { token.type=TokenType::Is; }
         else if (regex_search(sub, match, re_float)) { token.type=TokenType::Float; token.literal=std::stod(match.str());}
         else if (regex_search(sub, match, re_int)) { token.type=TokenType::Int; token.literal=std::stoi(match.str());}
         else if (regex_search(sub, match, re_string)) { token.type=TokenType::String; token.literal=match.str();}

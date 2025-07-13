@@ -62,7 +62,7 @@ namespace Parser {
     using StmtPtr = std::shared_ptr<Stmt>;
 
     // Expression types
-    struct ExprLiteral     { Lexer::Literal value; };
+    struct ExprLiteral     { Lexer::Token value; };
     struct ExprId          { Lexer::Token id; };
     struct ExprBinop       { ExprPtr left; Lexer::Token op; ExprPtr right; };
     struct ExprUnop        { Lexer::Token op; ExprPtr expr; };

@@ -48,89 +48,7 @@ namespace Parser {
     }
     
     ExprPtr Parser::parse_expr() {
-        // Lexer::Token *curr = &tokens[index];
 
-
-        // end of expression if
-        // rpar (all types)
-        // Newline if no lpar
-        // comma
-        // EOF
-
-
-        // while(true) {
-        //     // get next token
-        //     Lexer::Token *curr = get(index);
-        //     Lexer::Type type = curr->type;
-        //     ++index;
-
-
-
-        //     // if its an end condition, return
-        //     if (tokenRParen.contains(type) ||
-        //         !in_paren && curr->type == Lexer::Type::Newline ||
-        //         type == Lexer::Type::Comma) {
-        //         break;
-        //     } else if(type == Lexer::Type::LPar) { // add other paren
-        //         Expr inside = parse_expr(true);
-        //     }
-
-
-        //     // literal
-        //     else if(tokenLiteral.contains(type) || type == Lexer::Type::Id || tokenUnop.contains(type)) {
-        //         Lexer::Token *next = lookahead();
-
-
-        //         if(tokenUnop.contains(type)) {
-        //             // if paren then parseexpr else just next literal
-        //             // -(2+2)
-        //             if(next->type == Lexer::Type::LPar) {
-        //                 return ExprUnop(*curr, ExprPtr(&parse_expr(true)));
-        //             }
-        //             ++index;
-        //             Expr left = ExprLiteral(next->literal);
-        //             return ExprUnop(*curr, ExprPtr(&left));
-        //         }
-                
-                
-        //         if(type == Lexer::Type::Id) {
-        //             if(next->type == Lexer::Type::LPar) {
-
-        //             } else if(next->type == Lexer::Type::LSquare) {
-
-        //             } else if(next->type == Lexer::Type::Period) {
-        //                 Expr left = ExprLiteral(curr->literal);
-        //                 return ExprBinop(ExprPtr(&left), *next, ExprPtr(&parse_expr()));
-        //             }
-        //         } else if(tokenBinop.contains(next->type)) {
-        //             Expr left = ExprLiteral(curr->literal);
-        //             return ExprBinop(ExprPtr(&left), *next, ExprPtr(&parse_expr())); // how to add order of op?
-        //         }
-        //         return ExprLiteral(next->literal);
-        //     }
-
-        //     // 
-        // }
-
-        // whenever !parens.is_empty(), we completely ignore Newlines
-        // 
-
-        // part of current expression
-        // literal,
-        
-        // recurse a new expression
-        // lpar, operator
-
-        // operators
-        // pemmddas
-        // indexing, function, acces, expon, 
-        // 9002,     9002,     9002,  9001   
-        // mul, div, ddiv, mod, add, sub, bit shift, bit and, bit xor, bit or
-        // 800, 800, 800,  800, 600, 600
-        // in, not in, is, is not, comparisons
-
-        // not3, and2, or1, if..else0, 
-        // map: k, v = op, power level
     }
 
     void Parser::print_stmts() {
@@ -182,8 +100,25 @@ namespace Parser {
         }
     }
 
-    ExprPtr Parser::parse_var_expr() {
-
+    ExprPtr Parser::parse_var_expr() { // id int bool float str
+        Lexer::Token *curr = lookahead(0);
+        if(curr->type == Lexer::Type::Id) {
+            ExprPtr expr = parse_callget_expr();
+            if(expr) {
+                return expr;
+            } else {
+                ++index;
+                Expr res = ExprId(*curr);
+                return ExprPtr(&res);
+            }
+        } else if(tokenLiteral.contains(curr->type)) {
+            ++index;
+            Expr res = ExprId(*curr);
+            return ExprPtr(&res);
+        } else {
+            std::cerr << "what?" << std::endl;
+            return nullptr;
+        }
     }
 
     ExprPtr Parser::parse_pow_expr() {
@@ -200,7 +135,7 @@ namespace Parser {
         return parse_pow_expr();
     }
 
-    ExprPtr Parser::parse_multdiv_expr() {
+    ExprPtr Parser::parse_multdiv_expr() { 
         Lexer::Token *curr = lookahead(0);
 
     }

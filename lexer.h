@@ -74,7 +74,7 @@ namespace Lexer {
     inline std::regex re_none(R"(^None)");
     inline std::regex re_id(R"(^[a-zA-Z][a-zA-Z0-9]*)");
 
-    enum class TokenType {
+    enum class Type {
         // whitespace
         Comment, Tab, Newline, Whitespace,
 
@@ -111,7 +111,7 @@ namespace Lexer {
     using Literal = std::variant<std::monostate, std::string, int, double, bool>;
 
     struct Token {
-        TokenType type = TokenType::Invalid;
+        Type type = Type::Invalid;
         std::string lexeme = "NONE";
         Literal literal = std::monostate();
         int line = 0;

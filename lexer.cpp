@@ -12,8 +12,14 @@ namespace Lexer {
         size_t newIndex = -1;
         // Only reassign token.type and token.literal
         if (regex_search(sub, match, re_comment)) { token.type=Type::Comment; }
-        else if (regex_search(sub, match, re_tab)) { token.type=Type::Tab; }
-        else if (regex_search(sub, match, re_newline)) { line += 1; token.type=Type::Newline; }
+        else if (regex_search(sub, match, re_scope)) {
+            token.type=Type::Scope; token.literal = 0;
+            // match.string
+
+            // find \n
+            int newline = match.string.find("\n");
+            // count tabs
+        }
         else if (regex_search(sub, match, re_ws)) { token.type=Type::Whitespace; }
         else if (regex_search(sub, match, re_arrow)) { token.type=Type::Arrow; }
         else if (regex_search(sub, match, re_bitor)) { token.type=Type::BitOr; }

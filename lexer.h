@@ -11,8 +11,7 @@ namespace Lexer {
     inline std::regex re_comment(R"(^#.*$)");
 
     // combine tab and newline regex and lex the tabs within it
-    inline std::regex re_scope(R"(^(\t|    )*\n(\t|    )*)");
-    inline std::regex re_newilne_tabs(R"(^\n(\t|    )*)");
+    inline std::regex re_scope(R"(\n(\t|    )*)");
     inline std::regex re_tab(R"(^(\t|    ))");
     // inline std::regex re_newline(R"(^\n)");
     

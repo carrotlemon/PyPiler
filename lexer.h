@@ -117,16 +117,18 @@ namespace Lexer {
         Literal literal = std::monostate();
         int line = 0;
     };
+
+    using TokenPtr = std::shared_ptr<Token>;
     
     class Lexer {
     public:
         Lexer(std::string *source);
-        std::tuple<Token, size_t, int> findMatch(size_t index, int line);
+        std::tuple<TokenPtr, size_t, int> findMatch(size_t index, int line);
         void printTokens(bool advanced = false);
-        std::vector<Token> *tokenize();
+        std::vector<TokenPtr> *tokenize();
     private:
         size_t parenCount = 0;
         std::string *source;
-        std::vector<Token> tokens;
+        std::vector<TokenPtr> tokens;
     };
 }

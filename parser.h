@@ -47,10 +47,10 @@ namespace Parser {
     using StmtPtr = std::shared_ptr<Stmt>;
 
     // Expression types
-    struct ExprLiteral     { Lexer::Token value; };
-    struct ExprId          { Lexer::Token id; };
-    struct ExprBinop       { ExprPtr left; Lexer::Token op; ExprPtr right; };
-    struct ExprUnop        { Lexer::Token op; ExprPtr expr; };
+    struct ExprLiteral     { Lexer::TokenPtr value; };
+    struct ExprId          { Lexer::TokenPtr id; };
+    struct ExprBinop       { ExprPtr left; Lexer::TokenPtr op; ExprPtr right; };
+    struct ExprUnop        { Lexer::TokenPtr op; ExprPtr expr; };
     struct ExprFunc        { ExprId id; std::vector<ExprPtr> args; };
     struct ExprIndex       { ExprId id; std::vector<ExprPtr> args; };
     struct ExprList        { std::vector<ExprPtr> elements; };
@@ -64,7 +64,7 @@ namespace Parser {
 
     // Statement types
     struct StmtExpression  { ExprPtr expr; };
-    struct StmtAssign      { std::string name; Lexer::Token op; ExprPtr expr; };
+    struct StmtAssign      { std::string name; Lexer::TokenPtr op; ExprPtr expr; };
     struct StmtBlock       { std::vector<StmtPtr> stmts; };
     // Each condition aligns with a body, if there is an extra body that is the else statement
     struct StmtIf          { std::vector<ExprPtr> conditions; std::vector<StmtPtr> bodies; };
@@ -86,15 +86,15 @@ namespace Parser {
 
     class Parser {
     public:
-        Parser(std::vector<Lexer::Token> tokens);
-        std::vector<StmtPtr> *parse(std::vector<Lexer::Token> tokens);
+        Parser(std::vector<Lexer::TokenPtr> tokens);
+        std::vector<StmtPtr> *parse();
         void print();
         void print_stmt(StmtPtr stmt);
         void print_expr(ExprPtr expr);
         std::string type_to_string(TypeName type);
     private:
         size_t index = 0;
-        std::vector<Lexer::Token> tokens;
+        std::vector<Lexer::TokenPtr> tokens;
         std::vector<StmtPtr> stmts;
 
         StmtPtr parse_stmt();
@@ -103,7 +103,7 @@ namespace Parser {
 
         // TODO:
         // finish unimplemented things
-
+        TypeName parse_type();
         // order of operations 
         ExprPtr parse_paren_expr();
         ExprPtr parse_callget_expr(); // id() id.id id[] id[:]
@@ -111,22 +111,22 @@ namespace Parser {
         ExprPtr parse_pow_expr(); // **
         ExprPtr parse_unop_expr(); // ~ -
         ExprPtr parse_multdiv_expr(); // * // / %
-        ExprPtr parse_addsub_expr();
-        ExprPtr parse_bit_shift_expr();
-        ExprPtr parse_bit_and_expr();
-        ExprPtr parse_bit_xor_expr();
-        ExprPtr parse_bit_or_expr();
-        ExprPtr parse_cmp_expr();
-        //ExprPtr parse_assign_expr();
-        ExprPtr parse_not_expr();
-        ExprPtr parse_and_expr();
-        ExprPtr parse_or_expr();
-        // ExprPtr parse_ternary_expr();
-        // ExprPtr parse_lambda_expr();
+        ExprPtr parse_addsub_expr(); // + -
+        ExprPtr parse_bit_shift_expr(); // << >>
+        ExprPtr parse_bit_and_expr(); // &
+        ExprPtr parse_bit_xor_expr(); // ^
+        ExprPtr parse_bit_or_expr(); // |
+        ExprPtr parse_cmp_expr(); // != == <= < >= >
+        //ExprPtr parse_assign_expr(); // :=
+        ExprPtr parse_not_expr(); // not
+        ExprPtr parse_and_expr(); // and
+        ExprPtr parse_or_expr(); // or
+        // ExprPtr parse_ternary_expr(); // _ if _ else _
+        // ExprPtr parse_lambda_expr(); // lambda arg1, arg2: expr
 
-        // returns the next token or EndOfFile if end is reached
-        Lexer::Token *lookahead(size_t increment = 1);
-        Lexer::Token *get(size_t i);
+        // returns the next TokenPtr or EndOfFile if end is reached
+        Lexer::TokenPtr lookahead(size_t increment = 1);
+        Lexer::TokenPtr get(size_t i);
     };
 }
 

@@ -1,18 +1,17 @@
 #include "parser.h"
 
 namespace Parser {
-    Parser::Parser(std::vector<Lexer::Token> tokens) : tokens(tokens) { };
+    Parser::Parser(std::vector<Lexer::TokenPtr> tokens) : tokens(tokens) { };
 
-    Lexer::Token *Parser::lookahead(size_t increment) {
-        return this->index+increment < this->tokens.size() ? &tokens[index+increment] : &tokens.back();
+    Lexer::TokenPtr Parser::lookahead(size_t increment) {
+        return this->index+increment < this->tokens.size() ? tokens[index+increment] : tokens.back();
     }
 
-    Lexer::Token *Parser::get(size_t i) {
-        return i < this->tokens.size() ? &tokens[i] : &tokens.back();
+    Lexer::TokenPtr Parser::get(size_t i) {
+        return i < this->tokens.size() ? tokens[i] : tokens.back();
     }
 
-    std::vector<StmtPtr> *Parser::parse(std::vector<Lexer::Token> tokens) {
-
+    std::vector<StmtPtr> *Parser::parse() {
         while(index < tokens.size()) {
              stmts.push_back(parse_stmt());
         }
@@ -20,10 +19,26 @@ namespace Parser {
     }
 
     StmtPtr Parser::parse_stmt() {
-        Lexer::Token *curr = &tokens[index];
+        Lexer::TokenPtr curr = tokens[index];
         Stmt res;
-        if(curr->type == Lexer::Type::Def) {
-                
+        // get scope (tab count)
+        size_t scope = 0;
+        while(lookahead(0)->type == Lexer::Type::Tab) {
+            ++scope;
+            ++index;
+        }
+        if(curr->type == Lexer::Type::Def) { // def id(args, args):\nStmtBlock
+            if(lookahead()->type == Lexer::Type::Id && lookahead(2)->type == Lexer::Type::LPar) {
+                index += 2;
+                while(lookahead(0)->type != Lexer::Type::RPar) {
+                    ExprPtr arg = parse_expr();
+                    if(lookahead(0)->type == Lexer::Type::Comma) {
+                        TypeName type = 
+                    }
+                }
+            } else {
+                throw std::runtime_error("Invalid Syntax for: def"); // print line as well
+            }
         } else if(curr->type == Lexer::Type::Id) {
 
         } else if(curr->type == Lexer::Type::If) {
@@ -44,7 +59,7 @@ namespace Parser {
         } else {
             res = std::monostate();
         }
-        return StmtPtr(&res);
+        return std::make_shared<Stmt>(res);
     }
     
     ExprPtr Parser::parse_expr() {
@@ -57,7 +72,7 @@ namespace Parser {
         }
     }
 
-    void Parser::print_stmt(StmtPtr stmt) {
+    void Parser::print_stmt(StmtPtr stmt) { // make sure to implement comments here somewhere
         if (std::holds_alternative<StmtExpression>(*stmt)) {
             auto& stmtExpression = std::get<StmtExpression>(*stmt);
             std::cout << "StmtExpression" << std::endl;
@@ -65,7 +80,7 @@ namespace Parser {
         } else if (std::holds_alternative<StmtAssign>(*stmt)) {
             auto& stmtAssign = std::get<StmtAssign>(*stmt);
             std::cout << "StmtAssign" << std::endl;
-            std::cout << stmtAssign.name << " " << stmtAssign.op.lexeme << std::endl;
+            std::cout << stmtAssign.name << " " << stmtAssign.op->lexeme << std::endl;
             print_expr(stmtAssign.expr);
         } else if (std::holds_alternative<StmtBlock>(*stmt)) {
             auto& stmtBlock = std::get<StmtBlock>(*stmt);
@@ -142,9 +157,32 @@ namespace Parser {
 
     }
 
+    TypeName Parser::parse_type() {
+        Lexer::TokenPtr curr = lookahead(0);
+        Lexer::Literal type = curr->literal;
+        if(std::holds_alternative<std::string>(type)) {
+            std::string type_name = std::get<std::string>(type);
+            if(type_name == "int") { return TypeName::Int; }
+            else if(type_name == "int") { return TypeName::Int; }
+            else if(type_name == "int") { return TypeName::Int; }
+            else if(type_name == "int") { return TypeName::Int; }
+            else if(type_name == "int") { return TypeName::Int; }
+            else if(type_name == "int") { return TypeName::Int; }
+            else if(type_name == "int") { return TypeName::Int; }
+            else if(type_name == "int") { return TypeName::Int; }
+            else if(type_name == "int") { return TypeName::Int; }
+            else if(type_name == "int") { return TypeName::Int; }
+            else if(type_name == "int") { return TypeName::Int; }
+            else if(type_name == "int") { return TypeName::Int; }
+            else if(type_name == "int") { return TypeName::Int; }
+            else if(type_name == "int") { return TypeName::Int; }
+        }
+        throw std::runtime_error("Invalid Typename at line " + curr->line);
+    }
+
     // ordered by operation precedence
     ExprPtr Parser::parse_paren_expr() {
-        Lexer::Token *curr = lookahead(0);
+        Lexer::TokenPtr curr = lookahead(0);
         if(curr->type == Lexer::Type::LPar) { // tuple or paren
             Expr res = ExprTuple();
             std::vector<ExprPtr> *elements = &std::get<ExprTuple>(res).elements;
@@ -188,15 +226,15 @@ namespace Parser {
         return nullptr;
     }
 
-    ExprPtr Parser::parse_callget_expr() {
-        Lexer::Token *next = lookahead(0);
+    ExprPtr Parser::parse_callget_expr() { // index is currently at an id
+        Lexer::TokenPtr next = lookahead();
         if(next->type == Lexer::Type::LPar) { // function call
             Expr res = ExprFunc();
             // get and set args
             return ExprPtr(&res);
         } else if(next->type == Lexer::Type::LSquare) { // []
             ++index;
-            Expr res = ExprIndex(*lookahead(0));
+            Expr res = ExprIndex(lookahead(0));
             while(lookahead(0)->type != Lexer::Type::RSquare) {
                 // get is safe here because res is always an ExprIndex
                 std::get<ExprIndex>(res).args.push_back(parse_expr());
@@ -205,35 +243,35 @@ namespace Parser {
             ++index;
             return ExprPtr(&res);
         } else if(next->type == Lexer::Type::Period) { // .
-            Lexer::Token *id = lookahead(0);
-            Lexer::Token *field = lookahead(2);
-            Expr left = ExprId(*id);
-            Expr right = ExprId(*field);
-            Expr res = ExprBinop(ExprPtr(&left), *next, ExprPtr(&right));
+            Lexer::TokenPtr id = lookahead(0);
+            Lexer::TokenPtr field = lookahead(2);
+            Expr left = ExprId(id);
+            Expr right = ExprId(field);
+            Expr res = ExprBinop(ExprPtr(&left), next, ExprPtr(&right));
             index += 3;
             return ExprPtr(&res);
         } else {
-            Lexer::Token *id = lookahead(0);
-            Expr res = ExprId(*id);
+            Lexer::TokenPtr id = lookahead(0);
+            Expr res = ExprId(id);
             index += 2;
             return ExprPtr(&res);
         }
     }
 
     ExprPtr Parser::parse_var_expr() { // id int bool float str
-        Lexer::Token *curr = lookahead(0);
+        Lexer::TokenPtr curr = lookahead(0);
         if(curr->type == Lexer::Type::Id) {
             ExprPtr expr = parse_callget_expr();
             if(expr) {
                 return expr;
             } else {
                 ++index;
-                Expr res = ExprId(*curr);
+                Expr res = ExprId(curr);
                 return ExprPtr(&res);
             }
         } else if(tokenLiteral.contains(curr->type)) {
             ++index;
-            Expr res = ExprLiteral(*curr);
+            Expr res = ExprLiteral(curr);
             return ExprPtr(&res);
         }
         return parse_paren_expr();
@@ -241,22 +279,22 @@ namespace Parser {
 
     ExprPtr Parser::parse_pow_expr() { // **
         ExprPtr left = parse_var_expr();
-        Lexer::Token *curr = lookahead(0);
+        Lexer::TokenPtr curr = lookahead(0);
         if(curr->type == Lexer::Type::DStar) {
             ++index;
             ExprPtr right = parse_pow_expr();
-            Expr res = ExprBinop(left, *curr, right);
+            Expr res = ExprBinop(left, curr, right);
             return ExprPtr(&res);
         }
         return left;
     }
 
     ExprPtr Parser::parse_unop_expr() { // ~ -
-        Lexer::Token *curr = lookahead(0);
+        Lexer::TokenPtr curr = lookahead(0);
         if(curr->type == Lexer::Type::Negate || curr->type == Lexer::Type::Minus) {
             ++index;
             ExprPtr right = parse_bit_xor_expr();
-            Expr res = ExprUnop(*curr, right);
+            Expr res = ExprUnop(curr, right);
             return ExprPtr(&res);
         }
         return parse_pow_expr();
@@ -264,11 +302,11 @@ namespace Parser {
 
     ExprPtr Parser::parse_multdiv_expr() {  //      * / % //
         ExprPtr left = parse_unop_expr();
-        Lexer::Token *curr = lookahead(0);
+        Lexer::TokenPtr curr = lookahead(0);
         if(curr->type == Lexer::Type::DSlash || curr->type == Lexer::Type::Star || curr->type == Lexer::Type::Slash || curr->type == Lexer::Type::Mod) {
             ++index;
             ExprPtr right = parse_multdiv_expr();
-            Expr res = ExprBinop(left, *curr, right);
+            Expr res = ExprBinop(left, curr, right);
             return ExprPtr(&res);
         }
         return left;
@@ -276,11 +314,11 @@ namespace Parser {
 
     ExprPtr Parser::parse_addsub_expr() { // + -
         ExprPtr left = parse_multdiv_expr();
-        Lexer::Token *curr = lookahead(0);
+        Lexer::TokenPtr curr = lookahead(0);
         if(curr->type == Lexer::Type::Plus || curr->type == Lexer::Type::Minus) {
             ++index;
             ExprPtr right = parse_bit_and_expr();
-            Expr res = ExprBinop(left, *curr, right);
+            Expr res = ExprBinop(left, curr, right);
             return ExprPtr(&res);
         }
         return left;
@@ -288,11 +326,11 @@ namespace Parser {
 
     ExprPtr Parser::parse_bit_shift_expr() { // << >>
         ExprPtr left = parse_addsub_expr();
-        Lexer::Token *curr = lookahead(0);
+        Lexer::TokenPtr curr = lookahead(0);
         if(curr->type == Lexer::Type::ShLeft || curr->type == Lexer::Type::ShRight) {
             ++index;
             ExprPtr right = parse_bit_shift_expr();
-            Expr res = ExprBinop(left, *curr, right);
+            Expr res = ExprBinop(left, curr, right);
             return ExprPtr(&res);
         }
         return left;
@@ -300,11 +338,11 @@ namespace Parser {
 
     ExprPtr Parser::parse_bit_and_expr() {
         ExprPtr left = parse_bit_shift_expr();
-        Lexer::Token *curr = lookahead(0);
+        Lexer::TokenPtr curr = lookahead(0);
         if(curr->type == Lexer::Type::BitAnd) {
             ++index;
             ExprPtr right = parse_bit_and_expr();
-            Expr res = ExprBinop(left, *curr, right);
+            Expr res = ExprBinop(left, curr, right);
             return ExprPtr(&res);
         }
         return left;
@@ -312,11 +350,11 @@ namespace Parser {
 
     ExprPtr Parser::parse_bit_xor_expr() {
         ExprPtr left = parse_bit_and_expr();
-        Lexer::Token *curr = lookahead(0);
+        Lexer::TokenPtr curr = lookahead(0);
         if(curr->type == Lexer::Type::Xor) {
             ++index;
             ExprPtr right = parse_bit_xor_expr();
-            Expr res = ExprBinop(left, *curr, right);
+            Expr res = ExprBinop(left, curr, right);
             return ExprPtr(&res);
         }
         return left;
@@ -324,30 +362,30 @@ namespace Parser {
 
     ExprPtr Parser::parse_bit_or_expr() {
         ExprPtr left = parse_bit_xor_expr();
-        Lexer::Token *curr = lookahead(0);
+        Lexer::TokenPtr curr = lookahead(0);
         if(curr->type == Lexer::Type::BitOr) {
             ++index;
             ExprPtr right = parse_bit_or_expr();
-            return std::make_shared<Expr>(ExprBinop{left, *curr, right});
+            return std::make_shared<Expr>(ExprBinop{left, curr, right});
         }
         return left;
     }
 
     ExprPtr Parser::parse_cmp_expr() {
         ExprPtr left = parse_bit_or_expr();
-        Lexer::Token *curr = lookahead(0);
+        Lexer::TokenPtr curr = lookahead(0);
         if(tokenCmp.contains(curr->type)) {
             
             ++index;
             ExprPtr right = parse_cmp_expr();
 
-            ExprPtr res = std::make_shared<Expr>(ExprBinop{left, *curr, right});
+            ExprPtr res = std::make_shared<Expr>(ExprBinop{left, curr, right});
             while(tokenCmp.contains(lookahead(0)->type)) {
                 --index;
                 left = right;
                 right = parse_cmp_expr();
-                ExprPtr newCond = std::make_shared<Expr>(ExprBinop{left, *curr, right});
-                Lexer::Token op();
+                ExprPtr newCond = std::make_shared<Expr>(ExprBinop{left, curr, right});
+                Lexer::TokenPtr op =  std::make_shared<Lexer::Token>(Lexer::Token(Lexer::Type::And));
                 res = std::make_shared<Expr>(ExprBinop{res, op, newCond});
             }
             return res;
@@ -357,33 +395,33 @@ namespace Parser {
 
     ExprPtr Parser::parse_not_expr() {
         ExprPtr left = parse_cmp_expr();
-        Lexer::Token *curr = lookahead(0);
+        Lexer::TokenPtr curr = lookahead(0);
         if(curr->type == Lexer::Type::Not) {
             ++index;
             ExprPtr right = parse_not_expr();
-            return std::make_shared<Expr>(ExprBinop{left, *curr, right});
+            return std::make_shared<Expr>(ExprBinop{left, curr, right});
         }
         return left;
     }
 
     ExprPtr Parser::parse_and_expr() {
         ExprPtr left = parse_not_expr();
-        Lexer::Token *curr = lookahead(0);
+        Lexer::TokenPtr curr = lookahead(0);
         if(curr->type == Lexer::Type::And) {
             ++index;
             ExprPtr right = parse_and_expr();
-            return std::make_shared<Expr>(ExprBinop{left, *curr, right});
+            return std::make_shared<Expr>(ExprBinop{left, curr, right});
         }
         return left;
     }
 
     ExprPtr Parser::parse_or_expr() {
         ExprPtr left = parse_and_expr();
-        Lexer::Token *curr = lookahead(0);
+        Lexer::TokenPtr curr = lookahead(0);
         if(curr->type == Lexer::Type::Or) {
             ++index;
             ExprPtr right = parse_or_expr();
-            return std::make_shared<Expr>(ExprBinop{left, *curr, right});
+            return std::make_shared<Expr>(ExprBinop{left, curr, right});
         }
         return left;
     }

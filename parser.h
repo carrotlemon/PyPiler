@@ -14,31 +14,16 @@ namespace Parser {
     // End Conditions:
     // ) ] } : 
     // \n if parenCount == 0
-
-    std::unordered_set<Lexer::Type> tokenLParen = {
-        Lexer::Type::LPar, Lexer::Type::LSquare, Lexer::Type::LBrace
-    };
-    std::unordered_set<Lexer::Type> tokenRParen = {
-        Lexer::Type::RPar, Lexer::Type::RSquare, Lexer::Type::RBrace
-    };
     std::unordered_set<Lexer::Type> tokenLiteral = {
         Lexer::Type::Float, Lexer::Type::Int, 
         Lexer::Type::String, Lexer::Type::None,
         Lexer::Type::True, Lexer::Type::False,
-        Id
+        Lexer::Type::Id
     };
-    std::unordered_set<Lexer::Type> tokenBinop = {
-        Lexer::Type::DSlash, Lexer::Type::Slash, 
-        Lexer::Type::Plus, Lexer::Type::Minus, 
-        Lexer::Type::Star, Lexer::Type::Period,
-        Lexer::Type::And, Lexer::Type::Or,
-        Lexer::Type::BitOr, Lexer::Type::BitAnd, 
-        Lexer::Type::ShRight, Lexer::Type::ShLeft, 
-        Lexer::Type::Xor, Lexer::Type::In,
-        Lexer::Type::Is
-    };
-    std::unordered_set<Lexer::Type> tokenUnop = {
-        Lexer::Type::Negate, Lexer::Type::Minus
+    std::unordered_set<Lexer::Type> tokenCmp = {
+        Lexer::Type::GreaterEqual, Lexer::Type::Greater,
+        Lexer::Type::GreaterEqual, Lexer::Type::Greater,
+        Lexer::Type::NotEqual, Lexer::Type::Equal
     };
     // std::unordered_set<Lexer::Type> tokenEndExpr = {
     //     Lexer::Type::Colon, Lexer::Type::Newline,
@@ -69,22 +54,24 @@ namespace Parser {
     struct ExprFunc        { ExprId id; std::vector<ExprPtr> args; };
     struct ExprIndex       { ExprId id; std::vector<ExprPtr> args; };
     struct ExprList        { std::vector<ExprPtr> elements; };
+    struct ExprTuple       { std::vector<ExprPtr> elements; };
     struct ExprDict        { std::vector<std::tuple<ExprPtr,ExprPtr>> pairs; };
 
     struct Expr : std::variant<std::monostate, ExprLiteral, ExprId, ExprBinop, 
-                                ExprUnop, ExprFunc, ExprIndex> {
+                                ExprUnop, ExprFunc, ExprIndex, ExprList, ExprTuple, ExprDict> {
         using variant::variant;
     };
 
     // Statement types
-    struct StmtExpression  { ExprPtr expression; };
-    struct StmtAssign      { std::string name; Lexer::Token op; ExprPtr initializer; };
-    struct StmtBlock       { std::vector<Stmt> stmts; };
-    struct StmtIf          { ExprPtr condition; StmtPtr body; };
-    struct StmtFor         { ExprPtr condition; StmtPtr body; };
+    struct StmtExpression  { ExprPtr expr; };
+    struct StmtAssign      { std::string name; Lexer::Token op; ExprPtr expr; };
+    struct StmtBlock       { std::vector<StmtPtr> stmts; };
+    // Each condition aligns with a body, if there is an extra body that is the else statement
+    struct StmtIf          { std::vector<ExprPtr> conditions; std::vector<StmtPtr> bodies; };
+    struct StmtFor         { ExprPtr condition; StmtPtr body; }; // the body is a block
     struct StmtWhile       { ExprPtr condition; StmtPtr body; };
     struct StmtFunc        { std::string name; std::vector<std::string> args; 
-                             std::vector<TypeName> argTypes; std::vector<StmtPtr> body; };
+                             std::vector<TypeName> argTypes; StmtPtr body; };
     struct StmtReturn      { ExprPtr value; };
     struct StmtContinue    {};
     struct StmtBreak       {};
@@ -101,10 +88,12 @@ namespace Parser {
     public:
         Parser(std::vector<Lexer::Token> tokens);
         std::vector<StmtPtr> *parse(std::vector<Lexer::Token> tokens);
-        void print_stmts();    
+        void print();
+        void print_stmt(StmtPtr stmt);
+        void print_expr(ExprPtr expr);
+        std::string type_to_string(TypeName type);
     private:
         size_t index = 0;
-        size_t parenCount = 0;
         std::vector<Lexer::Token> tokens;
         std::vector<StmtPtr> stmts;
 

@@ -24,6 +24,7 @@ namespace Lexer {
         else if (regex_search(sub, match, re_xor)) { token.type=Type::Xor; }
         else if (regex_search(sub, match, re_dslash)) { token.type=Type::DSlash; }
         else if (regex_search(sub, match, re_slash)) { token.type=Type::Slash; }
+        else if (regex_search(sub, match, re_mod)) { token.type=Type::Mod; }
         else if (regex_search(sub, match, re_plus)) { token.type=Type::Plus; }
         else if (regex_search(sub, match, re_minus)) { token.type=Type::Minus; }
         else if (regex_search(sub, match, re_dstar)) { token.type=Type::DStar; }
@@ -31,12 +32,12 @@ namespace Lexer {
         else if (regex_search(sub, match, re_colon)) { token.type=Type::Colon; }
         else if (regex_search(sub, match, re_comma)) { token.type=Type::Comma; }
         else if (regex_search(sub, match, re_period)) { token.type=Type::Period; }
-        else if (regex_search(sub, match, re_lpar)) { token.type=Type::LPar; }
-        else if (regex_search(sub, match, re_rpar)) { token.type=Type::RPar; }
-        else if (regex_search(sub, match, re_lsquare)) { token.type=Type::LSquare; }
-        else if (regex_search(sub, match, re_rsquare)) { token.type=Type::RSquare; }
-        else if (regex_search(sub, match, re_lbrace)) { token.type=Type::LBrace; }
-        else if (regex_search(sub, match, re_rbrace)) { token.type=Type::RBrace; }
+        else if (regex_search(sub, match, re_lpar)) { token.type=Type::LPar; ++parenCount; }
+        else if (regex_search(sub, match, re_rpar)) { token.type=Type::RPar; --parenCount; }
+        else if (regex_search(sub, match, re_lsquare)) { token.type=Type::LSquare; ++parenCount; }
+        else if (regex_search(sub, match, re_rsquare)) { token.type=Type::RSquare; --parenCount; }
+        else if (regex_search(sub, match, re_lbrace)) { token.type=Type::LBrace; ++parenCount; }
+        else if (regex_search(sub, match, re_rbrace)) { token.type=Type::RBrace; --parenCount; }
         else if (regex_search(sub, match, re_greater_equal)) { token.type=Type::GreaterEqual; }
         else if (regex_search(sub, match, re_greater)) { token.type=Type::Greater; }
         else if (regex_search(sub, match, re_less_equal)) { token.type=Type::LessEqual; }
@@ -152,7 +153,7 @@ namespace Lexer {
         int line = 0;
         while(index != -1 && index < source->size()) {
             auto [token, i, newline] = findMatch(index, line);
-            if (token.type!=Type::Whitespace) {
+            if (!(token.type == Type::Whitespace || parenCount == 0 && token.type == Type::Newline)) {
                 tokens.push_back(token);
             }
             index = i;

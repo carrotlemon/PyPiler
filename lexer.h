@@ -24,6 +24,7 @@ namespace Lexer {
 
     inline std::regex re_dslash(R"(^//)");
     inline std::regex re_slash(R"(^/)");
+    inline std::regex re_mod(R"(^%)");
     inline std::regex re_plus(R"(^\+)");
     inline std::regex re_minus(R"(^-)");
     inline std::regex re_dstar(R"(^\*\*)");
@@ -80,9 +81,9 @@ namespace Lexer {
 
         // operations
         BitOr, BitAnd, ShRight, ShLeft, Xor, Negate,
-        DSlash, Slash, Plus, Minus, DStar, Star, Colon, Period, Comma, 
+        DSlash, Slash, Mod, Plus, Minus, DStar, Star, Colon, Period, Comma, 
         
-        // paren
+        // parens
         LPar, RPar, LSquare, RSquare, LBrace, RBrace,
         
         // comparisons
@@ -93,7 +94,7 @@ namespace Lexer {
         // TODO:
         // add class keyword
         // add import, from, as keywords
-        // **, += -= *= /= %= := 
+        // **, += -= *= /= %= :=
 
         If, Elif, Else, Def, Or, Not, And, Return, Continue, Break,
         For, While, In, Is, Pass, Arrow, 
@@ -124,6 +125,7 @@ namespace Lexer {
         void printTokens(bool advanced = false);
         std::vector<Token> *tokenize();
     private:
+        size_t parenCount = 0;
         std::string *source;
         std::vector<Token> tokens;
     };

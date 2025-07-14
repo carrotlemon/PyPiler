@@ -25,6 +25,10 @@ namespace Parser {
         Lexer::Type::GreaterEqual, Lexer::Type::Greater,
         Lexer::Type::NotEqual, Lexer::Type::Equal
     };
+    std::unordered_set<Lexer::Type> tokenAssign = {
+        // = *= /= += -= %=
+        Lexer::Type::Assign
+    };
     // std::unordered_set<Lexer::Type> tokenEndExpr = {
     //     Lexer::Type::Colon, Lexer::Type::Newline,
     //     Lexer::Type::Comma
@@ -38,7 +42,9 @@ namespace Parser {
         
         List, Dict, Tuple, Set, Range, Enumerate, Zip, Slice, Frozenset,
 
-        Function, Lambda, Type
+        Function, Lambda, Type,
+
+        Any
     };
 
     struct Argument { std::string id; std::string type; };
@@ -51,8 +57,8 @@ namespace Parser {
     struct ExprId          { Lexer::TokenPtr id; };
     struct ExprBinop       { ExprPtr left; Lexer::TokenPtr op; ExprPtr right; };
     struct ExprUnop        { Lexer::TokenPtr op; ExprPtr expr; };
-    struct ExprFunc        { ExprId id; std::vector<ExprPtr> args; };
-    struct ExprIndex       { ExprId id; std::vector<ExprPtr> args; };
+    struct ExprFunc        { ExprPtr id; std::vector<ExprPtr> args; };
+    struct ExprIndex       { ExprPtr id; std::vector<ExprPtr> args; };
     struct ExprList        { std::vector<ExprPtr> elements; };
     struct ExprTuple       { std::vector<ExprPtr> elements; };
     struct ExprDict        { std::vector<std::tuple<ExprPtr,ExprPtr>> pairs; };
@@ -70,17 +76,18 @@ namespace Parser {
     struct StmtIf          { std::vector<ExprPtr> conditions; std::vector<StmtPtr> bodies; };
     struct StmtFor         { ExprPtr condition; StmtPtr body; }; // the body is a block
     struct StmtWhile       { ExprPtr condition; StmtPtr body; };
-    struct StmtFunc        { std::string name; std::vector<std::string> args; 
-                             std::vector<TypeName> argTypes; StmtPtr body; };
+    struct StmtFunc        { std::string name; std::vector<std::tuple<std::string, TypeName>> args;
+                             StmtPtr body; };
     struct StmtReturn      { ExprPtr value; };
     struct StmtContinue    {};
     struct StmtBreak       {};
     struct StmtPass        {};
+    struct StmtComment     { Lexer::TokenPtr comment; };
     // TODO:
     // add classes and imports
 
     struct Stmt : std::variant<std::monostate, StmtExpression, StmtAssign, StmtBlock, StmtIf, 
-        StmtFor, StmtWhile, StmtFunc, StmtReturn, StmtContinue, StmtBreak, StmtPass> {
+        StmtFor, StmtWhile, StmtFunc, StmtReturn, StmtContinue, StmtBreak, StmtPass, StmtComment> {
         using variant::variant;
     };
 
@@ -96,6 +103,7 @@ namespace Parser {
         size_t index = 0;
         std::vector<Lexer::TokenPtr> tokens;
         std::vector<StmtPtr> stmts;
+        std::vector<size_t> scope_stack{0};
 
         StmtPtr parse_stmt();
 
@@ -103,6 +111,7 @@ namespace Parser {
 
         // TODO:
         // finish unimplemented things
+        void parse_endline();
         TypeName parse_type();
         // order of operations 
         ExprPtr parse_paren_expr();
@@ -127,6 +136,8 @@ namespace Parser {
         // returns the next TokenPtr or EndOfFile if end is reached
         Lexer::TokenPtr lookahead(size_t increment = 1);
         Lexer::TokenPtr get(size_t i);
+        size_t get_scope();
+        size_t parse_scope();
     };
 }
 

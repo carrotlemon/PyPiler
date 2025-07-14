@@ -8,10 +8,15 @@
 
 namespace Lexer {
     // whitespace
-    inline std::regex re_comment(R"(^#)");
+    inline std::regex re_comment(R"(^#.*$)");
+
+    // combine tab and newline regex and lex the tabs within it
+    inline std::regex re_scope(R"(^(\t|    )*\n(\t|    )*)");
+    inline std::regex re_newilne_tabs(R"(^\n(\t|    )*)");
     inline std::regex re_tab(R"(^(\t|    ))");
-    inline std::regex re_newline(R"(^\n)");
-    inline std::regex re_ws(R"(^ +)");
+    // inline std::regex re_newline(R"(^\n)");
+    
+    inline std::regex re_ws(R"(^(\t| )+)");
 
     // operations
     inline std::regex re_arrow(R"(^->)");
@@ -77,7 +82,7 @@ namespace Lexer {
 
     enum class Type {
         // whitespace
-        Comment, Tab, Newline, Whitespace,
+        Comment, Scope, Tab, Newline, Whitespace,
 
         // operations
         BitOr, BitAnd, ShRight, ShLeft, Xor, Negate,

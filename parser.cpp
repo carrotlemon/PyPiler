@@ -11,9 +11,26 @@ namespace Parser {
         return i < this->tokens.size() ? tokens[i] : tokens.back();
     }
 
+    size_t Parser::get_scope() {
+        size_t res = 0;
+        while(lookahead(res)->type == Lexer::Type::Tab) {
+            ++res;
+        }
+        return res;
+    }
+
+    size_t Parser::parse_scope() {
+        size_t count = index;
+        while(lookahead(0)->type == Lexer::Type::Tab) {
+            ++index;
+        }
+        return index-count;
+    }
+
     std::vector<StmtPtr> *Parser::parse() {
         while(index < tokens.size()) {
-             stmts.push_back(parse_stmt());
+            StmtPtr stmt = parse_stmt();
+            if(stmt) { stmts.push_back(stmt); }
         }
         return &stmts;
     }
@@ -21,44 +38,82 @@ namespace Parser {
     StmtPtr Parser::parse_stmt() {
         Lexer::TokenPtr curr = tokens[index];
         Stmt res;
-        // get scope (tab count)
-        size_t scope = 0;
-        while(lookahead(0)->type == Lexer::Type::Tab) {
-            ++scope;
-            ++index;
-        }
-        if(curr->type == Lexer::Type::Def) { // def id(args, args):\nStmtBlock
+        size_t scope = parse_scope();
+        if(curr->type == Lexer::Type::Def) { // def id(args, args):\nStmtBlock || def id() -> type:
+
+            // def id(arg: int, arg)
+            //                ^
             if(lookahead()->type == Lexer::Type::Id && lookahead(2)->type == Lexer::Type::LPar) {
                 index += 2;
+                Stmt res = StmtFunc();
                 while(lookahead(0)->type != Lexer::Type::RPar) {
-                    ExprPtr arg = parse_expr();
                     if(lookahead(0)->type == Lexer::Type::Comma) {
-                        TypeName type = 
+                        ++index;
+                    } else {
+                        ExprPtr arg = parse_expr();
+                        std::string arg_name = std::get<ExprId>(*arg).id->lexeme;
+                        TypeName type = Any;
+                        if(lookahead(0)->type == Lexer::Type::Colon) {
+                            ++index;
+                            TypeName type = parse_type();
+                        }
+                        std::get<StmtFunc>(res).args.push_back({arg_name, type});
                     }
                 }
+                
             } else {
                 throw std::runtime_error("Invalid Syntax for: def"); // print line as well
             }
         } else if(curr->type == Lexer::Type::Id) {
-
+            Lexer::TokenPtr next = lookahead();
+            if (next->type == Lexer::Type::Assign) {
+                index += 2;
+                res = StmtAssign(curr->lexeme, next, parse_expr());
+            } else if (next->type == Lexer::Type::LPar) {
+                res = StmtExpression(parse_expr());
+            } else {
+                throw std::runtime_error("Invalid Syntax for: Id");
+            }
         } else if(curr->type == Lexer::Type::If) {
-
+            
         } else if(curr->type == Lexer::Type::For) {
 
         } else if(curr->type == Lexer::Type::While) {
 
+            ++index;
+            ExprPtr expr = parse_expr();
+            ++index;
+            StmtBlock block;
+            if (lookahead(0)->type != Lexer::Type::Newline) {
+                block.stmts.push_back(parse_stmt());
+                ++index;
+            } else {
+                ++index;
+                // New scope in the scope stack
+                size_t tabs = parse_scope();
+                if (scope_stack.back() < tabs)
+                    scope_stack.push_back(tabs);
+                while (scope_stack.back() == tabs)
+                    block.stmts.push_back(parse_stmt())
+            }
+            return StmtWhile(expr, block);
         } else if(curr->type == Lexer::Type::Return) {
             ++index;
             res = StmtReturn(parse_expr());
         } else if(curr->type == Lexer::Type::Continue) {
+            ++index;
             res = StmtContinue();
         } else if(curr->type == Lexer::Type::Break) {
+            ++index;
             res = StmtBreak();
         } else if(curr->type == Lexer::Type::Pass) {
+            ++index;
             res = StmtPass();
         } else {
+            ++index;
             res = std::monostate();
         }
+        parse_endline();
         return std::make_shared<Stmt>(res);
     }
     
@@ -114,7 +169,7 @@ namespace Parser {
             std::cout << "StmtFunc" << std::endl;
             std::cout << stmtFunc.name << std::endl;
             for (size_t i = 0; i < stmtFunc.args.size(); ++i) {
-                std::cout << type_to_string(stmtFunc.argTypes[i]) << " " << stmtFunc.args[i] << std::endl;
+                std::cout << type_to_string(std::get<1>(stmtFunc.args[i])) << " " << std::get<0>(stmtFunc.args[i]) << std::endl;
             }
             print_stmt(stmtFunc.body);
         } else if (std::holds_alternative<StmtReturn>(*stmt)) {
@@ -129,6 +184,16 @@ namespace Parser {
             std::cout << "StmtPass" << std::endl;
         } else {
             std::cout << "Stmt variant not found.";
+        }
+    }
+
+    void Parser::parse_endline() {
+        Lexer::TokenPtr curr = lookahead(0);
+        while(curr->type != Lexer::Type::Newline) {
+            if(curr->type == Lexer::Type::Comment) { 
+                stmts.push_back(std::make_shared<Stmt>(StmtComment(curr))); 
+            }
+            ++index;
         }
     }
 
@@ -154,28 +219,83 @@ namespace Parser {
 
     // print_expr ends in a newline
     void Parser::print_expr(ExprPtr expr) {
-
+        if (std::holds_alternative<ExprLiteral>(*expr)) {
+            auto& exprLiteral = std::get<ExprLiteral>(*expr);
+            std::cout << "ExprLiteral" << std::endl; 
+            std::cout << exprLiteral.value->lexeme << std::endl;
+        } else if (std::holds_alternative<ExprId>(*expr)) {
+            auto& exprId = std::get<ExprId>(*expr);
+            std::cout << "ExprId" << std::endl; 
+            std::cout << exprId.id->lexeme << std::endl;
+        } else if (std::holds_alternative<ExprBinop>(*expr)) {
+            auto& exprBinop = std::get<ExprBinop>(*expr);
+            std::cout << "ExprBinop" << std::endl; 
+            print_expr(exprBinop.left);
+            std::cout << exprBinop.op->lexeme << std::endl;
+            print_expr(exprBinop.right);
+        } else if (std::holds_alternative<ExprUnop>(*expr)) {
+            auto& exprUnop = std::get<ExprUnop>(*expr);
+            std::cout << "ExprUnop" << std::endl; 
+            std::cout << exprUnop.op->lexeme << std::endl;
+            print_expr(exprUnop.expr);
+        } else if (std::holds_alternative<ExprFunc>(*expr)) {
+            auto& exprFunc = std::get<ExprFunc>(*expr);
+            std::cout << "ExprFunc" << std::endl; 
+            print_expr(exprFunc.id);
+            for (size_t i = 0; i < exprFunc.args.size(); ++i) {
+                print_expr(exprFunc.args[i]);
+            }
+        } else if (std::holds_alternative<ExprIndex>(*expr)) {
+            auto& exprIndex = std::get<ExprIndex>(*expr);
+            std::cout << "ExprIndex" << std::endl; 
+            print_expr(exprIndex.id);
+            for (size_t i = 0; i < exprIndex.args.size(); ++i) {
+                print_expr(exprIndex.args[i]);
+            }
+        } else if (std::holds_alternative<ExprList>(*expr)) {
+            auto& exprList = std::get<ExprList>(*expr);
+            std::cout << "ExprList" << std::endl; 
+            for (size_t i = 0; i < exprList.elements.size(); ++i) {
+                print_expr(exprList.elements[i]);
+            }
+        } else if (std::holds_alternative<ExprTuple>(*expr)) {
+            auto& exprTuple = std::get<ExprTuple>(*expr);
+            std::cout << "ExprTuple" << std::endl; 
+            for (size_t i = 0; i < exprTuple.elements.size(); ++i) {
+                print_expr(exprTuple.elements[i]);
+            }
+        } else if (std::holds_alternative<ExprDict>(*expr)) {
+            auto& exprDict = std::get<ExprDict>(*expr);
+            std::cout << "ExprDict" << std::endl; 
+            for (size_t i = 0; i < exprDict.pairs.size(); ++i) {
+                print_expr(std::get<0>(exprDict.pairs[i]));
+                print_expr(std::get<1>(exprDict.pairs[i]));
+            }
+        }
     }
 
     TypeName Parser::parse_type() {
         Lexer::TokenPtr curr = lookahead(0);
         Lexer::Literal type = curr->literal;
         if(std::holds_alternative<std::string>(type)) {
+            ++index;
             std::string type_name = std::get<std::string>(type);
             if(type_name == "int") { return TypeName::Int; }
-            else if(type_name == "int") { return TypeName::Int; }
-            else if(type_name == "int") { return TypeName::Int; }
-            else if(type_name == "int") { return TypeName::Int; }
-            else if(type_name == "int") { return TypeName::Int; }
-            else if(type_name == "int") { return TypeName::Int; }
-            else if(type_name == "int") { return TypeName::Int; }
-            else if(type_name == "int") { return TypeName::Int; }
-            else if(type_name == "int") { return TypeName::Int; }
-            else if(type_name == "int") { return TypeName::Int; }
-            else if(type_name == "int") { return TypeName::Int; }
-            else if(type_name == "int") { return TypeName::Int; }
-            else if(type_name == "int") { return TypeName::Int; }
-            else if(type_name == "int") { return TypeName::Int; }
+            else if(type_name == "float") { return TypeName::Float; }
+            else if(type_name == "bool") { return TypeName::Bool; }
+            else if(type_name == "NoneType") { return TypeName::NoneType; }
+            else if(type_name == "list") { return TypeName::List; }
+            else if(type_name == "dict") { return TypeName::Dict; }
+            else if(type_name == "tuple") { return TypeName::Tuple; }
+            else if(type_name == "set") { return TypeName::Set; }
+            else if(type_name == "range") { return TypeName::Range; }
+            else if(type_name == "enumerate") { return TypeName::Enumerate; }
+            else if(type_name == "zip") { return TypeName::Zip; }
+            else if(type_name == "slice") { return TypeName::Slice; }
+            else if(type_name == "frozenset") { return TypeName::Frozenset; }
+            else if(type_name == "function") { return TypeName::Function; }
+            else if(type_name == "lambda") { return TypeName::Lambda; }
+            else if(type_name == "type") { return TypeName::Type; }
         }
         throw std::runtime_error("Invalid Typename at line " + curr->line);
     }
@@ -226,22 +346,35 @@ namespace Parser {
         return nullptr;
     }
 
+    // =-=-=-=-=-=-=-=-=-=-= =-=-=-=-=-=-=-=-=-=
     ExprPtr Parser::parse_callget_expr() { // index is currently at an id
         Lexer::TokenPtr next = lookahead();
         if(next->type == Lexer::Type::LPar) { // function call
-            Expr res = ExprFunc();
+            ExprFunc res = ExprFunc();
             // get and set args
-            return ExprPtr(&res);
-        } else if(next->type == Lexer::Type::LSquare) { // []
             ++index;
-            Expr res = ExprIndex(lookahead(0));
-            while(lookahead(0)->type != Lexer::Type::RSquare) {
-                // get is safe here because res is always an ExprIndex
-                std::get<ExprIndex>(res).args.push_back(parse_expr());
-                ++index; // skip the ':' separating args
+            while(lookahead(0)->type != Lexer::Type::RPar) {
+                if(lookahead(0)->type == Lexer::Type::Comma) {
+                    ++index;
+                } else {
+                    ExprPtr arg = parse_expr();
+                    res.args.push_back(arg);
+                }
             }
             ++index;
-            return ExprPtr(&res);
+            return std::make_shared<Expr>(res);
+        } else if(next->type == Lexer::Type::LSquare) { // []
+            ExprIndex res = ExprIndex(std::make_shared<Expr>(ExprId(lookahead(0))));
+            ++index;
+            while(lookahead(0)->type != Lexer::Type::RSquare) {
+                if(lookahead(0)->type == Lexer::Type::Comma) { ++index; }
+                else {
+                    // get is safe here because res is always an ExprIndex
+                    res.args.push_back(parse_expr());
+                }
+            }
+            ++index;
+            return std::make_shared<Expr>(res);
         } else if(next->type == Lexer::Type::Period) { // .
             Lexer::TokenPtr id = lookahead(0);
             Lexer::TokenPtr field = lookahead(2);
@@ -252,9 +385,8 @@ namespace Parser {
             return ExprPtr(&res);
         } else {
             Lexer::TokenPtr id = lookahead(0);
-            Expr res = ExprId(id);
             index += 2;
-            return ExprPtr(&res);
+            return std::make_shared<Expr>(ExprId(id));
         }
     }
 
@@ -271,8 +403,7 @@ namespace Parser {
             }
         } else if(tokenLiteral.contains(curr->type)) {
             ++index;
-            Expr res = ExprLiteral(curr);
-            return ExprPtr(&res);
+            return std::make_shared<Expr>(ExprLiteral(curr));
         }
         return parse_paren_expr();
     }

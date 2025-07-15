@@ -1,4 +1,5 @@
 #include "parser.h"
+#include <cassert>
 
 namespace Parser {
     Parser::Parser(std::vector<Lexer::TokenPtr> tokens) : tokens(tokens) { };
@@ -43,7 +44,7 @@ namespace Parser {
             //                ^
             if(lookahead()->type == Lexer::Type::Id && lookahead(2)->type == Lexer::Type::LPar) {
                 index += 2;
-                Stmt res = StmtFunc();
+                StmtFunc func;
                 while(lookahead(0)->type != Lexer::Type::RPar) {
                     if(lookahead(0)->type == Lexer::Type::Comma) {
                         ++index;
@@ -55,10 +56,36 @@ namespace Parser {
                             ++index;
                             TypeName type = parse_type();
                         }
-                        std::get<StmtFunc>(res).args.push_back({arg_name, type});
+                        func.args.push_back({arg_name, type});
                     }
                 }
-                
+                ++index;
+                // Next token must be arrow or colon
+                TypeName type = Any;
+                if (lookahead(0)->type == Lexer::Type::Arrow) {
+                    ++index;
+                    TypeName type = parse_type();
+                }
+                func.return_type = type;
+                // Index should be at colon
+                ++index;
+                StmtBlock block;
+                if (lookahead(0)->type != Lexer::Type::Scope ) {
+                    block.stmts.push_back(parse_stmt());
+                } else {
+                    int new_scope = get_scope();
+                    if (new_scope <= scope_stack.back()) {
+                        throw std::runtime_error("Invalid Syntax for: While");
+                    }
+                    ++index;
+                    scope_stack.push_back(new_scope);
+                    while (get_scope() == new_scope) {
+                        block.stmts.push_back(parse_stmt());
+                    }
+                    scope_stack.pop_back();
+                }
+                func.body = std::make_shared<Stmt>(block);
+                res = func;
             } else {
                 throw std::runtime_error("Invalid Syntax for: def"); // print line as well
             }
@@ -73,30 +100,46 @@ namespace Parser {
                 throw std::runtime_error("Invalid Syntax for: Id");
             }
         } else if(curr->type == Lexer::Type::If) {
-            
+            ++index;
+            StmtIf if_else_ladder;
+            auto [condition, block] = parse_conditional();
+            if_else_ladder.conditions.push_back(condition);
+            if_else_ladder.bodies.push_back(block);
+            assert(lookahead(0)->type == Lexer::Type::Scope);
+            while (lookahead()->type == Lexer::Type::Elif) {
+                index += 2;
+                auto [condition, block] = parse_conditional();
+                if_else_ladder.conditions.push_back(condition);
+                if_else_ladder.bodies.push_back(block);
+            }
+            assert(lookahead(0)->type == Lexer::Type::Scope);
+            if (lookahead()->type == Lexer::Type::Else) {
+                index += 3;
+                StmtBlock block;
+                if (lookahead(0)->type != Lexer::Type::Scope ) {
+                    block.stmts.push_back(parse_stmt());
+                } else {
+                    int new_scope = get_scope();
+                    if (new_scope <= scope_stack.back()) {
+                        throw std::runtime_error("Invalid Syntax for: While");
+                    }
+                    ++index;
+                    scope_stack.push_back(new_scope);
+                    while (get_scope() == new_scope) {
+                        block.stmts.push_back(parse_stmt());
+                    }
+                    scope_stack.pop_back();
+                }
+                if_else_ladder.bodies.push_back(std::make_shared<Stmt>(block));
+            }
+            res = if_else_ladder;
         } else if(curr->type == Lexer::Type::For) {
-
+            ++index;
+            auto [condition, block] = parse_conditional();
+            res = StmtFor(condition, std::make_shared<Stmt>(block));
         } else if(curr->type == Lexer::Type::While) {
             ++index;
-            ExprPtr condition = parse_expr();
-            // Ends at : token
-            ++index;
-            // Two choices are scope token or no scope token
-            StmtBlock block;
-            if (lookahead(0)->type != Lexer::Type::Scope ) {
-                block.stmts.push_back(parse_stmt());
-            } else {
-                int new_scope = get_scope();
-                if (new_scope <= scope_stack.back()) {
-                    throw std::runtime_error("Invalid Syntax for: While");
-                }
-                ++index;
-                scope_stack.push_back(new_scope);
-                while (get_scope() == new_scope) {
-                    block.stmts.push_back(parse_stmt());
-                }
-                scope_stack.pop_back();
-            }
+            auto [condition, block] = parse_conditional();
             res = StmtWhile(condition, std::make_shared<Stmt>(block));
         } else if(curr->type == Lexer::Type::Return) {
             ++index;
@@ -120,6 +163,30 @@ namespace Parser {
     
     ExprPtr Parser::parse_expr() {
         return parse_or_expr();
+    }
+
+    // Index should be at the conditional
+    std::tuple<ExprPtr, StmtPtr> Parser::parse_conditional() {
+            ExprPtr condition = parse_expr();
+            // Ends at : token
+            ++index;
+            // Two choices are scope token or no scope token
+            StmtBlock block;
+            if (lookahead(0)->type != Lexer::Type::Scope ) {
+                block.stmts.push_back(parse_stmt());
+            } else {
+                int new_scope = get_scope();
+                if (new_scope <= scope_stack.back()) {
+                    throw std::runtime_error("Invalid Syntax for: While");
+                }
+                ++index;
+                scope_stack.push_back(new_scope);
+                while (get_scope() == new_scope) {
+                    block.stmts.push_back(parse_stmt());
+                }
+                scope_stack.pop_back();
+            }
+            return {condition, std::make_shared<Stmt>(block)};
     }
 
     void Parser::print() {

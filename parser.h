@@ -76,7 +76,7 @@ namespace Parser {
     struct StmtIf          { std::vector<ExprPtr> conditions; std::vector<StmtPtr> bodies; };
     struct StmtFor         { ExprPtr condition; StmtPtr body; }; // the body is a block
     struct StmtWhile       { ExprPtr condition; StmtPtr body; };
-    struct StmtFunc        { std::string name; std::vector<std::tuple<std::string, TypeName>> args;
+    struct StmtFunc        { std::string name; std::vector<std::tuple<std::string, TypeName>> args; TypeName return_type;
                              StmtPtr body; };
     struct StmtReturn      { ExprPtr value; };
     struct StmtContinue    {};
@@ -106,7 +106,7 @@ namespace Parser {
         std::vector<int> scope_stack{0};
 
         StmtPtr parse_stmt();
-
+        std::tuple<ExprPtr, StmtPtr> parse_conditional();
         ExprPtr parse_expr();
 
         // TODO:

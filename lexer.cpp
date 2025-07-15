@@ -3,7 +3,7 @@
 #include "lexer.h"
 
 namespace Lexer {
-    Lexer::Lexer(std::string *source) : source(source) {};
+    Lexer::Lexer(std::string *source, size_t tab_stop) : source(source), tab_stop(tab_stop) {};
 
     std::tuple<TokenPtr, size_t, int> Lexer::findMatch(size_t index, int line) {
         std::smatch match;
@@ -13,12 +13,20 @@ namespace Lexer {
         // Only reassign token.type and token.literal
         if (regex_search(sub, match, re_comment)) { token.type=Type::Comment; }
         else if (regex_search(sub, match, re_scope)) {
-            token.type=Type::Scope; token.literal = 0;
-            // match.string
-
-            // find \n
-            int newline = match.string.find("\n");
-            // count tabs
+            token.type = Type::Scope; 
+            int scope = 0;
+            for(size_t i = 1; i < sub.size(); ++i) {
+                if(sub[i] == ' ') {
+                    ++scope;
+                } else if (sub[i] == '\t'){
+                    while(scope & (tab_stop-1)) {
+                        ++scope;
+                    }
+                } else {
+                    break;
+                }
+            }
+            token.literal = scope;
         }
         else if (regex_search(sub, match, re_ws)) { token.type=Type::Whitespace; }
         else if (regex_search(sub, match, re_arrow)) { token.type=Type::Arrow; }

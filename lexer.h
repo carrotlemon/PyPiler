@@ -5,6 +5,7 @@
 #include <optional>
 #include <vector>
 #include <regex>
+#include <cassert>
 
 namespace Lexer {
     // whitespace
@@ -126,7 +127,8 @@ namespace Lexer {
     
     class Lexer {
     public:
-        Lexer(std::string *source);
+        size_t tab_stop = 4;
+        Lexer(std::string *source, size_t tab_stop);
         std::tuple<TokenPtr, size_t, int> findMatch(size_t index, int line);
         void printTokens(bool advanced = false);
         std::vector<TokenPtr> *tokenize();

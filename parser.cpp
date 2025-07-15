@@ -11,20 +11,10 @@ namespace Parser {
         return i < this->tokens.size() ? tokens[i] : tokens.back();
     }
 
-    size_t Parser::get_scope() {
-        size_t res = 0;
-        while(lookahead(res)->type == Lexer::Type::Tab) {
-            ++res;
-        }
-        return res;
-    }
-
-    size_t Parser::parse_scope() {
-        size_t count = index;
-        while(lookahead(0)->type == Lexer::Type::Tab) {
-            ++index;
-        }
-        return index-count;
+    int Parser::get_scope() {
+        Lexer::TokenPtr curr= lookahead(0);
+        assert(curr->type == Lexer::Type::Scope);
+        return std::get<int>(curr->literal);
     }
 
     std::vector<StmtPtr> *Parser::parse() {
@@ -36,9 +26,17 @@ namespace Parser {
     }
 
     StmtPtr Parser::parse_stmt() {
+        // Curr should always be a Scope token to keep track of scope
+        Lexer::TokenPtr scope = tokens[index];
+        if (scope->type != Lexer::Type::Scope) {
+            throw std::runtime_error("Not a Scope Token");
+        }
+        if (std::get<int>(scope->literal) > scope_stack.back()) {
+            throw std::runtime_error("Scope Syntax is Wrong");
+        }
+        index++;
         Lexer::TokenPtr curr = tokens[index];
         Stmt res;
-        size_t scope = parse_scope();
         if(curr->type == Lexer::Type::Def) { // def id(args, args):\nStmtBlock || def id() -> type:
 
             // def id(arg: int, arg)
@@ -79,24 +77,27 @@ namespace Parser {
         } else if(curr->type == Lexer::Type::For) {
 
         } else if(curr->type == Lexer::Type::While) {
-
             ++index;
-            ExprPtr expr = parse_expr();
+            ExprPtr condition = parse_expr();
+            // Ends at : token
             ++index;
+            // Two choices are scope token or no scope token
             StmtBlock block;
-            if (lookahead(0)->type != Lexer::Type::Newline) {
+            if (lookahead(0)->type != Lexer::Type::Scope ) {
                 block.stmts.push_back(parse_stmt());
-                ++index;
             } else {
+                int new_scope = get_scope();
+                if (new_scope <= scope_stack.back()) {
+                    throw std::runtime_error("Invalid Syntax for: While");
+                }
                 ++index;
-                // New scope in the scope stack
-                size_t tabs = parse_scope();
-                if (scope_stack.back() < tabs)
-                    scope_stack.push_back(tabs);
-                while (scope_stack.back() == tabs)
-                    block.stmts.push_back(parse_stmt())
+                scope_stack.push_back(new_scope);
+                while (get_scope() == new_scope) {
+                    block.stmts.push_back(parse_stmt());
+                }
+                scope_stack.pop_back();
             }
-            return StmtWhile(expr, block);
+            res = StmtWhile(condition, std::make_shared<Stmt>(block));
         } else if(curr->type == Lexer::Type::Return) {
             ++index;
             res = StmtReturn(parse_expr());
@@ -189,7 +190,7 @@ namespace Parser {
 
     void Parser::parse_endline() {
         Lexer::TokenPtr curr = lookahead(0);
-        while(curr->type != Lexer::Type::Newline) {
+        while(curr->type != Lexer::Type::Scope) {
             if(curr->type == Lexer::Type::Comment) { 
                 stmts.push_back(std::make_shared<Stmt>(StmtComment(curr))); 
             }

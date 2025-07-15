@@ -103,7 +103,7 @@ namespace Parser {
         size_t index = 0;
         std::vector<Lexer::TokenPtr> tokens;
         std::vector<StmtPtr> stmts;
-        std::vector<size_t> scope_stack{0};
+        std::vector<int> scope_stack{0};
 
         StmtPtr parse_stmt();
 
@@ -136,8 +136,8 @@ namespace Parser {
         // returns the next TokenPtr or EndOfFile if end is reached
         Lexer::TokenPtr lookahead(size_t increment = 1);
         Lexer::TokenPtr get(size_t i);
-        size_t get_scope();
-        size_t parse_scope();
+
+        int get_scope();
     };
 }
 

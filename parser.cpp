@@ -16,9 +16,6 @@ namespace Parser {
         if(curr->type == Lexer::Type::EndOfFile) {
             return -1;
         }
-        if(curr->type != Lexer::Type::Scope) {
-            
-        }
         return std::get<int>(curr->literal);
     }
 
@@ -36,6 +33,7 @@ namespace Parser {
 
     StmtPtr Parser::parse_stmt() {
         // Curr should always be a Scope token to keep track of scope
+        parse_comment_stmt();
         Lexer::TokenPtr scope = lookahead(0);
         if (lookahead()->lexeme == "EOF" || scope->lexeme == "EOF") {
             return nullptr;
@@ -259,6 +257,8 @@ namespace Parser {
         ExprPtr condition = parse_expr();
         // Ends at : token
         ++index;
+        // account for comments
+        parse_comment_stmt();
         // Two choices are scope token or no scope token
         StmtBlock block;
         if (lookahead(0)->type != Lexer::Type::Scope ) {
@@ -279,6 +279,14 @@ namespace Parser {
             scope_stack.pop_back();
         }
         return {condition, std::make_shared<Stmt>(block)};
+    }
+
+    void Parser::parse_comment_stmt() {
+        Lexer::TokenPtr curr = lookahead(0);
+        if(curr->type == Lexer::Type::Comment) {
+            stmts.push_back(std::make_shared<Stmt>(StmtComment(curr)));
+            ++index;
+        }
     }
 
     void Parser::print() {
@@ -346,8 +354,10 @@ namespace Parser {
             std::cout << "StmtBreak" << std::endl;
         } else if (std::holds_alternative<StmtPass>(*stmt)) {
             std::cout << "StmtPass" << std::endl;
+        } else if (std::holds_alternative<StmtComment>(*stmt)) {
+            std::cout << "StmtComment: " << std::get<StmtComment>(*stmt).comment->lexeme << std::endl;
         } else {
-            std::cout << "monostate";
+            std::cout << "Stmt monostate";
         }
     }
 
@@ -462,7 +472,7 @@ namespace Parser {
         return nullptr;
     }
 
-    ExprPtr Parser::parse_id() { // index is currently at an id
+    ExprPtr Parser::parse_id_expr() { // index is currently at an id
         ExprPtr id = std::make_shared<Expr>(ExprId(lookahead(0)));
         ++index;
         Lexer::TokenPtr next = lookahead(0);
@@ -509,7 +519,7 @@ namespace Parser {
     ExprPtr Parser::parse_var_expr() { // id int bool float str
         Lexer::TokenPtr curr = lookahead(0);
         if(curr->type == Lexer::Type::Id) {
-            return parse_id();
+            return parse_id_expr();
         } else if(tokenLiteral.contains(curr->type)) {
             ++index;
             return std::make_shared<Expr>(ExprLiteral(curr));

@@ -1,4 +1,2 @@
-while True:
-    print("123")
-    
-    print("123")
+while x==2: # maybe
+    x = 2

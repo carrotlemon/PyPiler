@@ -6,10 +6,11 @@
 #include <vector>
 #include <regex>
 #include <cassert>
+#include <iostream>
 
 namespace Lexer {
     // whitespace
-    inline std::regex re_comment(R"(^#.*$)");
+    inline std::regex re_comment(R"(^#.*)");
 
     // combine tab and newline regex and lex the tabs within it
     inline std::regex re_scope(R"(^\n(\t|    )*)");
@@ -125,6 +126,7 @@ namespace Lexer {
 
     using TokenPtr = std::shared_ptr<Token>;
     
+    void print_token(TokenPtr token);
     std::string token_to_string(TokenPtr token);
 
     class Lexer {

@@ -11,6 +11,9 @@
 
 #include "lexer.hpp"
 
+// NTS:
+// next time you make a transpiler with tab scoping, wrap stmt with metadata
+// metadata: (Scope, Stmt, Comment)
 namespace Parser {
     // End Conditions:
     // ) ] } : 
@@ -189,6 +192,7 @@ namespace Parser {
         StmtPtr parse_continue_stmt();
         StmtPtr parse_break_stmt();
         StmtPtr parse_pass_stmt();
+        void parse_comment_stmt();
 
         ExprPtr parse_expr();
         // TODO:
@@ -197,7 +201,7 @@ namespace Parser {
         TypeName parse_type();
         // recursive descent parser
         ExprPtr parse_paren_expr();
-        ExprPtr parse_id(); // id() id.id id[] id[:] id
+        ExprPtr parse_id_expr(); // id() id.id id[] id[:] id
         ExprPtr parse_var_expr(); // literals
         ExprPtr parse_pow_expr(); // **
         ExprPtr parse_unop_expr(); // ~ -

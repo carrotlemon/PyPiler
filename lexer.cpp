@@ -1,5 +1,3 @@
-#include <regex>
-#include <iostream>
 #include "lexer.hpp"
 
 namespace Lexer {
@@ -184,5 +182,9 @@ namespace Lexer {
         }
         tokens.push_back(std::make_shared<Token>(Token{Type::EndOfFile, "EOF"}));
         return &tokens;
+    }
+
+    void print_token(TokenPtr token) {
+        std::cout << token_to_string(token) << std::endl;
     }
 }

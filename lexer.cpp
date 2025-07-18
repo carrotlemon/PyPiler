@@ -1,9 +1,9 @@
 #include <regex>
 #include <iostream>
-#include "lexer.h"
+#include "lexer.hpp"
 
 namespace Lexer {
-    Lexer::Lexer(std::string *source, size_t tab_stop) : source(source), tab_stop(tab_stop) {};
+    Lexer::Lexer(std::string *source, size_t tab_stop) : tab_stop(tab_stop), source(source) {};
 
     std::tuple<TokenPtr, size_t, int> Lexer::findMatch(size_t index, int line) {
         std::smatch match;
@@ -25,6 +25,9 @@ namespace Lexer {
                 } else {
                     break;
                 }
+            }
+            if(tokens.back()->type == Type::Scope) {
+                tokens.pop_back();
             }
             token.literal = scope;
         }
@@ -86,67 +89,11 @@ namespace Lexer {
         return {tokenptr, newIndex, line};
     }
 
-    void Lexer::printTokens(bool advanced) {
+    void Lexer::print_tokens(bool advanced) {
         size_t i = 0;
         
         for(auto t : tokens) {
-            if(t->type == Type::Comment) { std::cout << "Comment"; }
-            else if(t->type == Type::Tab) { std::cout << "Tab"; }
-            else if(t->type == Type::Newline) { std::cout << "Newline"; }
-            else if(t->type == Type::Whitespace) { std::cout << "Whitespace"; }
-            else if(t->type == Type::Arrow) { std::cout << "Arrow"; }
-            else if(t->type == Type::BitOr) { std::cout << "BitOr"; }
-            else if(t->type == Type::BitAnd) { std::cout << "BitAnd"; }
-            else if(t->type == Type::ShRight) { std::cout << "ShRight"; }
-            else if(t->type == Type::ShLeft) { std::cout << "ShLeft"; }
-            else if(t->type == Type::Negate) { std::cout << "Negate"; }
-            else if(t->type == Type::Xor) { std::cout << "Xor"; }
-            else if(t->type == Type::DSlash) { std::cout << "DSlash"; }
-            else if(t->type == Type::Slash) { std::cout << "Slash"; }
-            else if(t->type == Type::Plus) { std::cout << "Plus"; }
-            else if(t->type == Type::Minus) { std::cout << "Minus"; }
-            else if(t->type == Type::Star) { std::cout << "Star"; }
-            else if(t->type == Type::Colon) { std::cout << "Colon"; }
-            else if(t->type == Type::Comma) { std::cout << "Comma"; }
-            else if(t->type == Type::Period) { std::cout << "Period"; }   
-            else if(t->type == Type::LPar) { std::cout << "LPar"; }
-            else if(t->type == Type::RPar) { std::cout << "RPar"; }
-            else if(t->type == Type::LSquare) { std::cout << "LSquare"; }
-            else if(t->type == Type::RSquare) { std::cout << "RSquare"; }
-            else if(t->type == Type::LBrace) { std::cout << "LBrace"; }
-            else if(t->type == Type::RBrace) { std::cout << "RBrace"; }
-            else if(t->type == Type::GreaterEqual) { std::cout << "GreaterEqual"; }
-            else if(t->type == Type::Greater) { std::cout << "Greater"; }
-            else if(t->type == Type::LessEqual) { std::cout << "LessEqual"; }
-            else if(t->type == Type::Less) { std::cout << "Less"; }
-            else if(t->type == Type::NotEqual) { std::cout << "NotEqual"; }
-            else if(t->type == Type::Equal) { std::cout << "Equal"; }
-            else if(t->type == Type::Assign) { std::cout << "Assign"; }
-
-            else if(t->type == Type::If) { std::cout << "If"; }
-            else if(t->type == Type::Elif) { std::cout << "Elif"; }
-            else if(t->type == Type::Else) { std::cout << "Else"; }
-            else if(t->type == Type::Def) { std::cout << "Def"; }
-            else if(t->type == Type::Or) { std::cout << "Or"; }
-            else if(t->type == Type::And) { std::cout << "And"; }
-            else if(t->type == Type::Not) { std::cout << "Not"; }
-            else if(t->type == Type::Return) { std::cout << "Return"; }
-            else if(t->type == Type::Continue) { std::cout << "Continue"; }
-            else if(t->type == Type::Break) { std::cout << "Br"; }
-            else if(t->type == Type::For) { std::cout << "For"; }
-            else if(t->type == Type::While) { std::cout << "While"; }
-            else if(t->type == Type::In) { std::cout << "In"; }
-
-            else if(t->type == Type::Float) { std::cout << "Float"; }
-            else if(t->type == Type::Int) { std::cout << "Int"; }
-            else if(t->type == Type::String) { std::cout << "String"; }
-            else if(t->type == Type::True) { std::cout << "True"; }
-            else if(t->type == Type::False) { std::cout << "False"; }
-            else if(t->type == Type::None) { std::cout << "None"; }
-            else if(t->type == Type::Id) { std::cout << "Id"; }
-            else if(t->type == Type::EndOfFile) { std::cout << "EndOfFile"; }
-            else { std::cout << "INVALID"; }
-            
+            std::cout << token_to_string(t);
             if(i < tokens.size()-1) { std::cout << ", "; }
             if(t->type == Type::Newline) { std::cout << std::endl; }
             ++i;
@@ -163,12 +110,73 @@ namespace Lexer {
         std::cout << std::endl;
     }
 
+    std::string token_to_string(TokenPtr token) {
+        if(token->type == Type::Comment) { return "Comment"; }
+        else if(token->type == Type::Scope) { return "Scope"; }
+        else if(token->type == Type::Newline) { return "Newline"; }
+        else if(token->type == Type::Whitespace) { return "Whitespace"; }
+        else if(token->type == Type::Arrow) { return "Arrow"; }
+        else if(token->type == Type::BitOr) { return "BitOr"; }
+        else if(token->type == Type::BitAnd) { return "BitAnd"; }
+        else if(token->type == Type::ShRight) { return "ShRight"; }
+        else if(token->type == Type::ShLeft) { return "ShLeft"; }
+        else if(token->type == Type::Negate) { return "Negate"; }
+        else if(token->type == Type::Xor) { return "Xor"; }
+        else if(token->type == Type::DSlash) { return "DSlash"; }
+        else if(token->type == Type::Slash) { return "Slash"; }
+        else if(token->type == Type::Plus) { return "Plus"; }
+        else if(token->type == Type::Minus) { return "Minus"; }
+        else if(token->type == Type::Star) { return "Star"; }
+        else if(token->type == Type::Colon) { return "Colon"; }
+        else if(token->type == Type::Comma) { return "Comma"; }
+        else if(token->type == Type::Period) { return "Period"; }   
+        else if(token->type == Type::LPar) { return "LPar"; }
+        else if(token->type == Type::RPar) { return "RPar"; }
+        else if(token->type == Type::LSquare) { return "LSquare"; }
+        else if(token->type == Type::RSquare) { return "RSquare"; }
+        else if(token->type == Type::LBrace) { return "LBrace"; }
+        else if(token->type == Type::RBrace) { return "RBrace"; }
+        else if(token->type == Type::GreaterEqual) { return "GreaterEqual"; }
+        else if(token->type == Type::Greater) { return "Greater"; }
+        else if(token->type == Type::LessEqual) { return "LessEqual"; }
+        else if(token->type == Type::Less) { return "Less"; }
+        else if(token->type == Type::NotEqual) { return "NotEqual"; }
+        else if(token->type == Type::Equal) { return "Equal"; }
+        else if(token->type == Type::Assign) { return "Assign"; }
+
+        else if(token->type == Type::If) { return "If"; }
+        else if(token->type == Type::Elif) { return "Elif"; }
+        else if(token->type == Type::Else) { return "Else"; }
+        else if(token->type == Type::Def) { return "Def"; }
+        else if(token->type == Type::Or) { return "Or"; }
+        else if(token->type == Type::And) { return "And"; }
+        else if(token->type == Type::Not) { return "Not"; }
+        else if(token->type == Type::Return) { return "Return"; }
+        else if(token->type == Type::Continue) { return "Continue"; }
+        else if(token->type == Type::Break) { return "Br"; }
+        else if(token->type == Type::For) { return "For"; }
+        else if(token->type == Type::While) { return "While"; }
+        else if(token->type == Type::In) { return "In"; }
+
+        else if(token->type == Type::Float) { return "Float"; }
+        else if(token->type == Type::Int) { return "Int"; }
+        else if(token->type == Type::String) { return "String"; }
+        else if(token->type == Type::True) { return "True"; }
+        else if(token->type == Type::False) { return "False"; }
+        else if(token->type == Type::None) { return "None"; }
+        else if(token->type == Type::Id) { return "Id"; }
+        else if(token->type == Type::EndOfFile) { return "EndOfFile"; }
+        else { return "INVALID"; }
+    }
+
     std::vector<TokenPtr> *Lexer::tokenize() {
-        size_t index = 0;
+        int index = 0;
         int line = 0;
-        while(index != -1 && index < source->size()) {
+        Token init(Type::Scope, "", 0, 0);
+        tokens.push_back(std::make_shared<Token>(init));
+        while(index != -1 && index < (int)source->size()) {
             auto [token, i, newline] = findMatch(index, line);
-            if (!(token->type == Type::Whitespace || parenCount == 0 && token->type == Type::Newline)) {
+            if (!(token->type == Type::Whitespace || (parenCount == 0 && token->type == Type::Newline))) {
                 tokens.push_back(token);
             }
             index = i;

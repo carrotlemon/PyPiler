@@ -179,18 +179,26 @@ namespace Parser {
         std::vector<int> scope_stack{0};
 
         StmtPtr parse_stmt();
-        std::tuple<ExprPtr, StmtPtr> parse_conditional();
+        std::tuple<ExprPtr, StmtPtr> parse_block_stmt();
+        StmtPtr parse_func_stmt();
         StmtPtr parse_id_stmt();
-        ExprPtr parse_expr();
+        StmtPtr parse_if_stmt();
+        StmtPtr parse_for_stmt();
+        StmtPtr parse_while_stmt();
+        StmtPtr parse_return_stmt();
+        StmtPtr parse_continue_stmt();
+        StmtPtr parse_break_stmt();
+        StmtPtr parse_pass_stmt();
 
+        ExprPtr parse_expr();
         // TODO:
         // finish unimplemented things
         void parse_endline();
         TypeName parse_type();
-        // order of operations 
+        // recursive descent parser
         ExprPtr parse_paren_expr();
-        ExprPtr parse_callget_expr(); // id() id.id id[] id[:]
-        ExprPtr parse_var_expr(); // literals, id
+        ExprPtr parse_id(); // id() id.id id[] id[:] id
+        ExprPtr parse_var_expr(); // literals
         ExprPtr parse_pow_expr(); // **
         ExprPtr parse_unop_expr(); // ~ -
         ExprPtr parse_multdiv_expr(); // * // / %

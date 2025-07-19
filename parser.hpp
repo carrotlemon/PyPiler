@@ -1,5 +1,4 @@
 #pragma once
-
 #include <iostream>
 #include <string>
 #include <variant>
@@ -129,9 +128,9 @@ namespace Parser {
         StmtIf() {}; 
     };
     struct StmtFor {
-        ExprPtr target; ExprPtr iterable; StmtPtr body; 
-        StmtFor(ExprPtr target, ExprPtr iterable, StmtPtr body) : target(target), iterable(iterable), body(body) {}; 
-        StmtFor() {}; 
+        std::vector<ExprPtr> targets; ExprPtr iterable; StmtPtr body; 
+        StmtFor(std::vector<ExprPtr> targets, ExprPtr iterable, StmtPtr body) : targets(targets), iterable(iterable), body(body) {}; 
+        StmtFor() {};
     }; // the body is a block
     struct StmtWhile {
         ExprPtr condition; StmtPtr body; 
@@ -164,6 +163,7 @@ namespace Parser {
         using variant::variant;
     };
 
+    std::string type_to_string(TypeName type);
     class Parser {
     public:
         Parser(std::vector<Lexer::TokenPtr> *tokens);
@@ -171,8 +171,6 @@ namespace Parser {
         void print();
         void print_stmt(StmtPtr stmt);
         void print_expr(ExprPtr expr);
-        std::string type_to_string(TypeName type);
-
         // TEMP
         auto get_tokens() { return tokens; };
     private:

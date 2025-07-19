@@ -186,7 +186,11 @@ namespace Parser {
     StmtPtr Parser::parse_for_stmt() {
         Stmt res;
         ++index;
-        ExprPtr target = parse_expr();
+        std::vector<ExprPtr> targets = {parse_expr()};
+        while(lookahead(0)->type == Lexer::Type::Comma) {
+            ++index;
+            targets.push_back(parse_expr());
+        }
         // Ends at 'in' token
         ++index;
         ExprPtr iterable = parse_expr();
@@ -212,7 +216,7 @@ namespace Parser {
             scope_stack.pop_back();
         }
 
-        res = StmtFor(target, iterable, std::make_shared<Stmt>(block));
+        res = StmtFor(targets, iterable, std::make_shared<Stmt>(block));
         return std::make_shared<Stmt>(res);
     }
 
@@ -328,7 +332,9 @@ namespace Parser {
         } else if (std::holds_alternative<StmtFor>(*stmt)) {
             auto& stmtFor = std::get<StmtFor>(*stmt);
             std::cout << "StmtFor" << std::endl;
-            print_expr(stmtFor.target);
+            for(auto e : stmtFor.targets) {
+                print_expr(e);
+            }
             print_expr(stmtFor.iterable);
             print_stmt(stmtFor.body);
         } else if (std::holds_alternative<StmtWhile>(*stmt)) {
@@ -361,7 +367,7 @@ namespace Parser {
         }
     }
 
-    std::string Parser::type_to_string(TypeName type) {
+    std::string type_to_string(TypeName type) {
         if(type == Int) { return "int"; }
         else if(type == Float) { return "float"; }
         else if(type == Bool) { return "bool"; }

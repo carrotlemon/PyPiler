@@ -25,7 +25,7 @@ namespace Generator {
     
     std::string Generator::generate_assign_stmt(Parser::StmtPtr stmt) {
         Parser::StmtAssign *curr = &std::get<Parser::StmtAssign>(*stmt);
-        return curr->name + " " + op_to_string[curr->op->type] + " " + generate_expr(curr->expr) = ";\n";
+        return generate_expr(curr->expr) + " " + op_to_string[curr->op->type] + " " + generate_expr(curr->expr) = ";\n";
     }
     std::string Generator::generate_block_stmt(Parser::StmtPtr stmt) {
         Parser::StmtBlock *curr = &std::get<Parser::StmtBlock>(*stmt);
@@ -148,16 +148,32 @@ namespace Generator {
     }
     std::string Generator::generate_binop_expr(Parser:: ExprPtr expr) {
         Parser::ExprBinop *curr = &std::get<Parser::ExprBinop>(*expr);
-        return 
+        std::string res;
+        if(curr->op->type == Lexer::Type::Period) {
+            res = generate_expr(curr->left) + op_to_string[curr->op->type] + generate_expr(curr->right);
+        } else {
+            res = generate_expr(curr->left) + " " + op_to_string[curr->op->type] + " " + generate_expr(curr->right);
+        }
+        return res;
     }
     std::string Generator::generate_unop_expr(Parser:: ExprPtr expr) {
-        // 
+        Parser::ExprUnop *curr = &std::get<Parser::ExprUnop>(*expr);
+        return op_to_string[curr->op->type] + generate_expr(curr->expr);
     }
     std::string Generator::generate_func_expr(Parser:: ExprPtr expr) {
-        // 
+        return "";
     }
     std::string Generator::generate_index_expr(Parser:: ExprPtr expr) {
-
+        Parser::ExprIndex *curr = &std::get<Parser::ExprIndex>(*expr);
+        std::string res = generate_id_expr(curr->id) + "[";
+        for(size_t i = 0; i < curr->args.size(); ++i) {
+            res += generate_expr(curr->args[i]);
+            if(i != curr->args.size()-1) {
+                res += ",";
+            }
+        }
+        res += "]";
+        return res;
     }
     std::string Generator::generate_list_expr(Parser:: ExprPtr expr) {
         Parser::ExprList *curr = &std::get<Parser::ExprList>(*expr);
@@ -172,10 +188,29 @@ namespace Generator {
         return res;
     }
     std::string Generator::generate_tuple_expr(Parser:: ExprPtr expr) {
-        Parser::ExprList *curr = &std::get<Parser::ExprList>(*expr);
-        std::string res = "";
+        Parser::ExprTuple *curr = &std::get<Parser::ExprTuple>(*expr);
+        std::string res = "std::tuple";
+        // add types here
+        res += ">{";
+        for(size_t i = 0; i < curr->elements.size(); ++i) {
+            res += generate_expr(curr->elements[i]);
+            if(i < curr->elements.size()-1) {
+                res += ", ";
+            }
+        }
+        return res;
     }
     std::string Generator::generate_dict_expr(Parser:: ExprPtr expr) {
-
+        Parser::ExprDict *curr = &std::get<Parser::ExprDict>(*expr);
+        std::string res = "std::unordered_map<";
+        // add types here
+        res += ">{";
+        for(size_t i = 0; i < curr->pairs.size(); ++i) {
+            res += "{" + generate_expr(std::get<0>(curr->pairs[i])) + ", " + generate_expr(std::get<1>(curr->pairs[i])) + "}";
+            if(i < curr->pairs.size()-1) {
+                res += ", ";
+            }
+        }
+        return res + "}";
     }
 }

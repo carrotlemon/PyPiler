@@ -19,6 +19,9 @@ namespace Lexer {
     
     inline std::regex re_ws(R"(^(\t| )+)");
 
+    // typenames
+    inline std::regex re_int_type(R"(^int)");
+
     // operations
     inline std::regex re_arrow(R"(^->)");
     inline std::regex re_bitor(R"(^\|)");
@@ -73,7 +76,7 @@ namespace Lexer {
     inline std::regex re_is(R"(^is)");
 
     // literals
-    inline std::regex re_float(R"(^\d+.\d+)");
+    inline std::regex re_float(R"(^(\d+\.\d+))");
     inline std::regex re_int(R"(^\d+)");
     inline std::regex re_string(R"(^\".*\")");
     inline std::regex re_true(R"(^True)");

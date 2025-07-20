@@ -40,7 +40,7 @@ namespace Parser {
     struct Expr;
     struct Stmt;
 
-    enum TypeName { 
+    enum TypeNameEnum { 
         Int, Float, Bool, NoneType,
         
         List, Dict, Tuple, Set, Range, Enumerate, Zip, Slice, Frozenset,
@@ -49,6 +49,14 @@ namespace Parser {
 
         Any
     };
+    struct TypeName;
+    using TypeNamePtr = std::shared_ptr<TypeName>;
+    struct TypeName {
+        TypeNameEnum type = Any;
+        TypeNamePtr inside = nullptr;
+    };
+
+    
 
     struct Argument { std::string id; std::string type; };
 
@@ -112,8 +120,8 @@ namespace Parser {
         StmtExpression() {}; 
     };
     struct StmtAssign {
-        std::string name; Lexer::TokenPtr op; ExprPtr expr; 
-        StmtAssign(std::string name, Lexer::TokenPtr op, ExprPtr expr) : name(name), op(op), expr(expr) {}; 
+        ExprPtr name; Lexer::TokenPtr op; ExprPtr expr; 
+        StmtAssign(ExprPtr name, Lexer::TokenPtr op, ExprPtr expr) : name(name), op(op), expr(expr) {}; 
         StmtAssign() {};
     };
     struct StmtBlock {
@@ -138,8 +146,8 @@ namespace Parser {
         StmtWhile() {}; 
     };
     struct StmtFunc {
-        std::string name; std::vector<std::tuple<std::string, TypeName>> args; TypeName return_type; StmtPtr body; 
-        StmtFunc(std::string name, std::vector<std::tuple<std::string, TypeName>> args, TypeName return_type, 
+        std::string name; std::vector<std::tuple<std::string, TypeNamePtr>> args; TypeNamePtr return_type; StmtPtr body; 
+        StmtFunc(std::string name, std::vector<std::tuple<std::string, TypeNamePtr>> args, TypeNamePtr return_type, 
             StmtPtr body) : name(name), args(args), return_type(return_type), body(body) {}; 
         StmtFunc() {}; 
     };
@@ -163,7 +171,7 @@ namespace Parser {
         using variant::variant;
     };
 
-    std::string type_to_string(TypeName type);
+    std::string type_to_string(TypeNamePtr type);
     class Parser {
     public:
         Parser(std::vector<Lexer::TokenPtr> *tokens);
@@ -196,7 +204,7 @@ namespace Parser {
         // TODO:
         // finish unimplemented things
         void parse_endline();
-        TypeName parse_type();
+        TypeNamePtr parse_type();
         // recursive descent parser
         ExprPtr parse_paren_expr();
         ExprPtr parse_id_expr(); // id() id.id id[] id[:] id
@@ -214,6 +222,7 @@ namespace Parser {
         ExprPtr parse_not_expr(); // not
         ExprPtr parse_and_expr(); // and
         ExprPtr parse_or_expr(); // or
+        ExprPtr parse_in_expr();
         // ExprPtr parse_ternary_expr(); // _ if _ else _
         // ExprPtr parse_lambda_expr(); // lambda arg1, arg2: expr
 

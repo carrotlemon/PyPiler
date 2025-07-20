@@ -29,23 +29,23 @@ namespace Generator {
         {Lexer::Type::None, "nullptr"},
     };
 
-    std::unordered_map<Parser::TypeName, std::string> typename_to_string() = {
-        {Parser::TypeName::Int, "int"},
-        {Parser::TypeName::Float, "float"},
-        {Parser::TypeName::Bool, "bool"},
-        {Parser::TypeName::List, "std::vector<bruh>"},
-        {Parser::TypeName::Dict, "std::unordered_map<bruh>"},
-        {Parser::TypeName::Tuple, "std::tuple<bruh,bruh>"},
-        {Parser::TypeName::Set, "std::unordered_set<bruh>"},
-        {Parser::TypeName::Range, "auto"},
-        {Parser::TypeName::Enumerate, "auto"},
-        {Parser::TypeName::Zip, "auto"},
-        {Parser::TypeName::Slice, "auto"},
-        {Parser::TypeName::Frozenset, "auto"},
-        {Parser::TypeName::Function, "auto"},
-        {Parser::TypeName::Lambda, "auto"},
-        {Parser::TypeName::Type, "typename"},
-        {Parser::TypeName::Any, "bruh"}
+    std::unordered_map<Parser::TypeNameEnum, std::string> typename_to_string = {
+        {Parser::TypeNameEnum::Int, "int"},
+        {Parser::TypeNameEnum::Float, "float"},
+        {Parser::TypeNameEnum::Bool, "bool"},
+        {Parser::TypeNameEnum::List, "std::vector<bruh>"},
+        {Parser::TypeNameEnum::Dict, "std::unordered_map<bruh>"},
+        {Parser::TypeNameEnum::Tuple, "std::tuple<bruh,bruh>"},
+        {Parser::TypeNameEnum::Set, "std::unordered_set<bruh>"},
+        {Parser::TypeNameEnum::Range, "auto"},
+        {Parser::TypeNameEnum::Enumerate, "auto"},
+        {Parser::TypeNameEnum::Zip, "auto"},
+        {Parser::TypeNameEnum::Slice, "auto"},
+        {Parser::TypeNameEnum::Frozenset, "auto"},
+        {Parser::TypeNameEnum::Function, "auto"},
+        {Parser::TypeNameEnum::Lambda, "auto"},
+        {Parser::TypeNameEnum::Type, "typename"},
+        {Parser::TypeNameEnum::Any, "bruh"}
     };
 
     class Generator {
@@ -56,7 +56,6 @@ namespace Generator {
         std::string generate_expr(Parser::ExprPtr expr);
     private:
         std::vector<Parser::StmtPtr> stmts;
-        size_t index = 0;
         size_t tab_count = 0;
         std::string code;
 

@@ -72,6 +72,7 @@ namespace Lexer {
         else if (regex_search(sub, match, re_break)) { token.type=Type::Break; }
         else if (regex_search(sub, match, re_for)) { token.type=Type::For; }
         else if (regex_search(sub, match, re_while)) { token.type=Type::While; }
+        else if (regex_search(sub, match, re_int_type)) { token.type=Type::Id; token.literal=match.str(); }
         else if (regex_search(sub, match, re_in)) { token.type=Type::In; }
         else if (regex_search(sub, match, re_is)) { token.type=Type::Is; }
         else if (regex_search(sub, match, re_float)) { token.type=Type::Float; token.literal=std::stod(match.str());}

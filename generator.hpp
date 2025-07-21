@@ -29,24 +29,24 @@ namespace Generator {
         {Lexer::Type::None, "nullptr"},
     };
 
-    std::unordered_map<Parser::TypeNameEnum, std::string> typename_to_string = {
-        {Parser::TypeNameEnum::Int, "int"},
-        {Parser::TypeNameEnum::Float, "float"},
-        {Parser::TypeNameEnum::Bool, "bool"},
-        {Parser::TypeNameEnum::List, "std::vector<bruh>"},
-        {Parser::TypeNameEnum::Dict, "std::unordered_map<bruh>"},
-        {Parser::TypeNameEnum::Tuple, "std::tuple<bruh,bruh>"},
-        {Parser::TypeNameEnum::Set, "std::unordered_set<bruh>"},
-        {Parser::TypeNameEnum::Range, "auto"},
-        {Parser::TypeNameEnum::Enumerate, "auto"},
-        {Parser::TypeNameEnum::Zip, "auto"},
-        {Parser::TypeNameEnum::Slice, "auto"},
-        {Parser::TypeNameEnum::Frozenset, "auto"},
-        {Parser::TypeNameEnum::Function, "auto"},
-        {Parser::TypeNameEnum::Lambda, "auto"},
-        {Parser::TypeNameEnum::Type, "typename"},
-        {Parser::TypeNameEnum::Any, "bruh"}
-    };
+    // inline std::unordered_map<Parser::TypeNameEnum, std::string> typename_to_string = {
+    //     {Parser::TypeNameEnum::Int, "int"},
+    //     {Parser::TypeNameEnum::Float, "float"},
+    //     {Parser::TypeNameEnum::Bool, "bool"},
+    //     {Parser::TypeNameEnum::List, "std::vector<bruh>"},
+    //     {Parser::TypeNameEnum::Dict, "std::unordered_map<bruh>"},
+    //     {Parser::TypeNameEnum::Tuple, "std::tuple<bruh,bruh>"},
+    //     {Parser::TypeNameEnum::Set, "std::unordered_set<bruh>"},
+    //     {Parser::TypeNameEnum::Range, "auto"},
+    //     {Parser::TypeNameEnum::Enumerate, "auto"},
+    //     {Parser::TypeNameEnum::Zip, "auto"},
+    //     {Parser::TypeNameEnum::Slice, "auto"},
+    //     {Parser::TypeNameEnum::Frozenset, "auto"},
+    //     {Parser::TypeNameEnum::Function, "auto"},
+    //     {Parser::TypeNameEnum::Lambda, "auto"},
+    //     {Parser::TypeNameEnum::Type, "typename"},
+    //     {Parser::TypeNameEnum::Any, "bruh"}
+    // };
 
     class Generator {
     public:
@@ -55,11 +55,15 @@ namespace Generator {
         std::string generate_stmt(Parser::StmtPtr stmt);
         std::string generate_expr(Parser::ExprPtr expr);
     private:
+        std::vector<std::unordered_set<std::string>> env = {std::unordered_set<std::string>{"hi"}};
         std::vector<Parser::StmtPtr> stmts;
-        size_t tab_count = 0;
+        size_t scope = 0;
         std::string code;
 
+        std::string typename_to_string(Parser::TypeNamePtr);
+
         std::string generate_assign_stmt(Parser::StmtPtr stmt);
+        std::string generate_expr_stmt(Parser::StmtPtr stmt);
         std::string generate_block_stmt(Parser::StmtPtr stmt);
         std::string generate_if_stmt(Parser::StmtPtr stmt);
         std::string generate_for_stmt(Parser::StmtPtr stmt);
@@ -81,4 +85,4 @@ namespace Generator {
         std::string generate_tuple_expr(Parser:: ExprPtr expr);
         std::string generate_dict_expr(Parser:: ExprPtr expr);
     };
-}
+} 

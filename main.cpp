@@ -7,7 +7,7 @@
 #include <sstream>
 #include <regex>
 
-#include "parser.hpp"
+#include "generator.hpp"
 
 using namespace std;
 
@@ -38,10 +38,15 @@ int main(int argc, char** argv) {
 
     // parser
     Parser::Parser parser(tokens);
-    parser.parse();
+    std::vector<Parser::StmtPtr> *stmts = parser.parse();
     parser.print();
 
     // transpile
+    Generator::Generator generator(*stmts);
+    std::string res = generator.generate();
+
+    // output
+    std::cout << res << std::endl;
 
     return 0;
 }

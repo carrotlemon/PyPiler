@@ -186,6 +186,7 @@ namespace Parser {
         std::vector<Lexer::TokenPtr> *tokens;
         std::vector<StmtPtr> stmts;
         std::vector<int> scope_stack{0};
+        bool parsing_for_loop = false;
 
         StmtPtr parse_stmt();
         std::tuple<ExprPtr, StmtPtr> parse_block_stmt();
@@ -198,7 +199,7 @@ namespace Parser {
         StmtPtr parse_continue_stmt();
         StmtPtr parse_break_stmt();
         StmtPtr parse_pass_stmt();
-        void parse_comment_stmt();
+        StmtPtr parse_comment_stmt();
 
         ExprPtr parse_expr();
         // TODO:
@@ -228,9 +229,11 @@ namespace Parser {
 
         // returns the next TokenPtr or EndOfFile if end is reached
         Lexer::TokenPtr lookahead(size_t increment = 1);
+        
+        // debug functions
         Lexer::TokenPtr get(size_t i);
-
         int get_scope();
+        void print_curr();
     };
 }
 

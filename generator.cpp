@@ -59,21 +59,16 @@ namespace Generator {
     }
     std::string Generator::generate_expr_stmt(Parser::StmtPtr stmt) {
         Parser::StmtExpression *curr = &std::get<Parser::StmtExpression>(*stmt);
-        Parser::ExprFunc func;
-        if(std::holds_alternative<Parser::ExprFunc>(*(curr->expr))) {
-            func = std::get<Parser::ExprFunc>(*(curr->expr));
+        std::string res;
+        
+        if(std::holds_alternative<Parser::ExprFunc>(*(curr->expr))) { // foo();
+            res = generate_func_expr(curr->expr) + ";\n";
+        } else if (std::holds_alternative<Parser::ExprBinop>(*(curr->expr))) { // foo.bar();
+            res = generate_binop_expr(curr->expr) + ";\n";
         } else {
             throw std::runtime_error("Expected ExprFunc in StmtExpression");
         }
-        Parser::ExprId id = std::get<Parser::ExprId>(*func.id);
-        std::string res = id.id->lexeme + "(";
-        for(size_t i = 0; i < func.args.size(); ++i) {
-            res += generate_expr(func.args[i]);
-            if(i != func.args.size()-1) {
-                res += ", ";
-            }
-        }
-        res += ");\n";
+        
         return res;        
     }
     std::string Generator::generate_block_stmt(Parser::StmtPtr stmt) {
@@ -91,39 +86,58 @@ namespace Generator {
     std::string Generator::generate_if_stmt(Parser::StmtPtr stmt) {
         Parser::StmtIf *curr = &std::get<Parser::StmtIf>(*stmt);
         std::string res;
+        std::string tabs = "";
+        for(size_t i = 0; i < scope; ++i) {
+            tabs += "    ";
+        }
         for (size_t i = 0; i < curr->conditions.size(); ++i) {
             if (i == 0) {
                 res += "if(" + generate_expr(curr->conditions[i]) + ") {\n";
             } else {
-                res += "else if(" + generate_expr(curr->conditions[i]) + ") {\n";
+                res += tabs + "else if(" + generate_expr(curr->conditions[i]) + ") {\n";
             }
             ++scope;
-            res += "    " + generate_stmt(curr->bodies[i]);
+            res += generate_stmt(curr->bodies[i]);
             --scope;
-            std::string tabs = "";
-            for(size_t i = 0; i < scope; ++i) {
-                tabs += "    ";
-            }
             res += tabs + "}\n";
         }
         if(curr->conditions.size() < curr->bodies.size()) {
-            res += "else {\n" + generate_block_stmt(curr->bodies[curr->bodies.size()-1]) + "}\n";
+            res += tabs + "else {\n";
+            ++scope;
+            res += generate_stmt(curr->bodies[curr->bodies.size()-1]);
+            --scope;
+            res += tabs + "}\n";
         }
         return res;
     }
     std::string Generator::generate_for_stmt(Parser::StmtPtr stmt) {
         Parser::StmtFor *curr = &std::get<Parser::StmtFor>(*stmt);
-        // for i, n in range(7):
-        // for 
-        std::string res = "for(auto ";
-
-        for(size_t i = 0; i < curr->targets.size(); ++i) {
-            res += generate_expr(curr->targets[i]);
-            if(i != curr->targets.size()-1) {
-                res += ", ";
+        Parser::Expr iterable = *curr->iterable;
+        std::string res = "for(";
+        if(std::holds_alternative<Parser::ExprFunc>(iterable) && std::get<Parser::ExprFunc>(iterable).id == "range") {
+            Parser::ExprFunc range = std::get<Parser::ExprFunc>(iterable);
+            if(range.args.size() == 1) {
+                res += "int i = 0; i < " + generate_expr(range.args[0]) + "; ++i"; 
+            } else if(range.args.size() == 2) {
+                res += "int i = " + generate_expr(range.args[0]) + "; i < " + generate_expr(range.args[1]) + "; ++i"; 
+            } else if(range.args.size() == 3) {
+                res += "int i = " + generate_expr(range.args[0]) + "; i < " + generate_expr(range.args[1]) + "; i += " 
+                        + generate_expr(range.args[2]); 
+            } else {
+                throw std::runtime_error("invalid args for range()");
             }
+        } else {
+            res += "auto ";
+            for(size_t i = 0; i < curr->targets.size(); ++i) {
+                res += generate_expr(curr->targets[i]);
+                if(i != curr->targets.size()-1) {
+                    res += ", ";
+                }
+            }
+            res += " : " + generate_expr(curr->iterable);
         }
-        res += " : " + generate_expr(curr->iterable) + ") {\n";
+        
+        res += ") {\n";
         ++scope;
         res += generate_block_stmt(curr->body);
         --scope;
@@ -194,7 +208,6 @@ namespace Generator {
         // std::cout << comment << std::endl;
         return "//" + comment.substr(1) + "\n";
     }
-
     std::string Generator::generate_expr(Parser::ExprPtr expr) {
         std::string res;
         if(std::holds_alternative<Parser::ExprLiteral>(*expr)) { res = generate_literal_expr(expr); }
@@ -239,7 +252,12 @@ namespace Generator {
     }
     std::string Generator::generate_func_expr(Parser:: ExprPtr expr) {
         Parser::ExprFunc *curr = &std::get<Parser::ExprFunc>(*expr);
-        std::string res = std::get<Parser::ExprId>(*(curr->id)).id->lexeme + "(";
+        std::string res;
+        std::string id = curr->id;
+        if(id == "append") { res += "push_back"; }
+        else if(id == "str") { res += "to_string"; }
+        else { res += id; }
+        res += "(";
         for(size_t i = 0; i < curr->args.size(); ++i) {
             res += generate_expr(curr->args[i]);
             if(i != curr->args.size()-1) {
@@ -263,7 +281,7 @@ namespace Generator {
     }
     std::string Generator::generate_list_expr(Parser:: ExprPtr expr) {
         Parser::ExprList *curr = &std::get<Parser::ExprList>(*expr);
-        std::string res = "std::vector{";
+        std::string res = "std::vector<string>{";
         for(size_t i = 0; i < curr->elements.size(); ++i) {
             res += generate_expr(curr->elements[i]);
             if(i < curr->elements.size()-1) {
@@ -307,8 +325,9 @@ namespace Generator {
         Parser::TypeNameEnum type_enum = type->type;
         std::string res;
         if(type_enum == Parser::TypeNameEnum::Int) { res = "int" ;}
-        else if(type_enum == Parser::TypeNameEnum::Float) { res = ""; }
-        else if(type_enum == Parser::TypeNameEnum::Bool) { res = ""; }
+        else if(type_enum == Parser::TypeNameEnum::Float) { res = "float"; }
+        else if(type_enum == Parser::TypeNameEnum::Bool) { res = "bool"; }
+        else if(type_enum == Parser::TypeNameEnum::String) { res = "string"; }
         else if(type_enum == Parser::TypeNameEnum::List) { 
             std::string res = "std::vector<";
             res += typename_to_string(type->inside);
@@ -332,7 +351,7 @@ namespace Generator {
         else if(type_enum == Parser::TypeNameEnum::Function) { res = "auto"; }
         else if(type_enum == Parser::TypeNameEnum::Lambda) { res = "auto"; }
         else if(type_enum == Parser::TypeNameEnum::Type) { res = "typename"; }
-        else if(type_enum == Parser::TypeNameEnum::Any) { res = "PythonObject???"; }
+        else if(type_enum == Parser::TypeNameEnum::Any) { res = "int"; } // change late
         else { res = "TYPE NOT FOUND"; };
         return res;
     }

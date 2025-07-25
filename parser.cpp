@@ -445,6 +445,7 @@ namespace Parser {
             else if(type_name == "float") { res.type = TypeNameEnum::Float; }
             else if(type_name == "bool") { res.type = TypeNameEnum::Bool; }
             else if(type_name == "NoneType") { res.type = TypeNameEnum::NoneType; }
+            else if(type_name == "str") { res.type = TypeNameEnum::String; }
             else if(type_name == "list") {
                 res.type = TypeNameEnum::List;
                 ++index; // [ 
@@ -532,7 +533,11 @@ namespace Parser {
         Lexer::TokenPtr curr = lookahead(0);
         if(curr->type == Lexer::Type::LPar) { // function call
             ExprFunc res = ExprFunc();
-            res.id = id;
+            if(std::holds_alternative<ExprId>(*id)) {
+                res.id = std::get<ExprId>(*id).id->lexeme;
+            } else {
+                throw std::runtime_error("Expected Id in ExprFunc");
+            }
             // get and set args
             ++index; // (
             while(lookahead(0)->type != Lexer::Type::RPar) {
@@ -774,8 +779,7 @@ namespace Parser {
             print_expr(exprUnop.expr);
         } else if (std::holds_alternative<ExprFunc>(*expr)) {
             auto& exprFunc = std::get<ExprFunc>(*expr);
-            std::cout << "ExprFunc" << std::endl; 
-            print_expr(exprFunc.id);
+            std::cout << "ExprFunc" << exprFunc.id << std::endl; 
             for (size_t i = 0; i < exprFunc.args.size(); ++i) {
                 print_expr(exprFunc.args[i]);
             }

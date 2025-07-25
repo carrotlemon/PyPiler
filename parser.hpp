@@ -41,7 +41,7 @@ namespace Parser {
     struct Stmt;
 
     enum TypeNameEnum { 
-        Int, Float, Bool, NoneType,
+        Int, Float, Bool, NoneType, String,
         
         List, Dict, Tuple, Set, Range, Enumerate, Zip, Slice, Frozenset,
 
@@ -85,8 +85,8 @@ namespace Parser {
         ExprUnop() {}; 
     };
     struct ExprFunc {
-        ExprPtr id; std::vector<ExprPtr> args; 
-        ExprFunc(ExprPtr id, std::vector<ExprPtr> args) : id(id), args(args) {}; 
+        std::string id; std::vector<ExprPtr> args; 
+        ExprFunc(std::string id, std::vector<ExprPtr> args) : id(id), args(args) {}; 
         ExprFunc() {}; 
     };
     struct ExprIndex {

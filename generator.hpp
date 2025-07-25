@@ -4,6 +4,8 @@
 
 namespace Generator {
     inline std::unordered_map<Lexer::Type, std::string> op_to_string = {
+        {Lexer::Type::And, "&&"},
+        {Lexer::Type::Or, "||"},
         {Lexer::Type::BitOr, "|"},
         {Lexer::Type::BitAnd, "&"},
         {Lexer::Type::ShRight, ">>"},
